@@ -31,7 +31,7 @@ if st.button("اسأل المساعد", type="primary"):
             try:
                 # تهيئة النموذج مع توجيهه ليكون متخصصاً بالمنهج العراقي
                 model = genai.GenerativeModel(
-                    model_name="gemini-1.5-flash",
+                    model_name="gemini-1.5-pro",
                     system_instruction="أنت مساعد تعليمي ذكي ومتخصص حصرياً في المنهج الدراسي العراقي لجميع المراحل (الابتدائية، المتوسطة، الإعدادية). قدم إجابات علمية دقيقة، واضحة، ومنظمة، ومطابقة للمناهج المقررة في وزارة التربية العراقية."
                 )
                 
@@ -48,4 +48,3 @@ if st.button("اسأل المساعد", type="primary"):
 # تذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>تم تطوير هذا التطبيق خصيصاً لطلبة العراق 🇮🇶</p>", unsafe_allow_html=True)
-                
