@@ -29,22 +29,14 @@ if st.button("اسأل المساعد", type="primary"):
     else:
         with st.spinner("جاري التفكير والبحث في المنهج الدراسي..."):
             try:
-                # البحث تلقائياً عن أفضل نموذج متاح ومفعل لمفتاح الـ API الخاص بك
-                working_model = None
-                for m in genai.list_models():
-                    if 'generateContent' in m.supported_generation_methods:
-                        working_model = m.name
-                        break
+                # استخدام النموذج الأحدث المطلوب من النظام
+                model = genai.GenerativeModel('gemini-3.6-flash')
                 
-                if working_model:
-                    model = genai.GenerativeModel(working_model)
-                    prompt = f"أنت مساعد تعليمي ذكي ومتخصص حصرياً في المنهج الدراسي العراقي لجميع المراحل. أجب عن السؤال التالي بدقة وبشكل منظم ومطابق لوزارة التربية العراقية: {user_question}"
-                    response = model.generate_content(prompt)
-                    
-                    st.success("إليك الإجابة النموذجية:")
-                    st.markdown(response.text)
-                else:
-                    st.error("لم يتم العثور على نموذج مدعوم حالياً لمفتاح الـ API الخاص بك.")
+                prompt = f"أنت مساعد تعليمي ذكي ومتخصص حصرياً في المنهج الدراسي العراقي لجميع المراحل. أجب عن السؤال التالي بدقة وبشكل منظم ومطابق لوزارة التربية العراقية: {user_question}"
+                response = model.generate_content(prompt)
+                
+                st.success("إليك الإجابة النموذجية:")
+                st.markdown(response.text)
                 
             except Exception as e:
                 st.error(f"حدث خطأ أثناء الاتصال بالمساعد: {e}")
