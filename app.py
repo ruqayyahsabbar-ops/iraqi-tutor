@@ -2,7 +2,7 @@ import streamlit as st
 
 # إعدادات الصفحة الأساسية
 st.set_page_config(
-    page_title="مساعد المنهج العراقي الوزاري",
+    page_title="مساعد المنهج العراقي ",
     page_icon="📚",
     layout="centered"
 )
