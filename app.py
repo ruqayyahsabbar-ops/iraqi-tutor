@@ -34,10 +34,8 @@ if st.button("🚀 إرسال", type="primary"):
     else:
         with st.spinner("... جاري التفكير والبحث في المنهج الدراسي"):
             try:
-                # استخدام النموذج الأحدث الموصى به من رسالة الخطأ
                 model = genai.GenerativeModel('gemini-3.6-flash')
                 
-                # تجهيز محتوى الطلب بناءً على وجود صورة أو نص
                 if uploaded_image is not None:
                     image = PIL.Image.open(uploaded_image)
                     prompt_text = user_question.strip() if user_question.strip() else "اشرح هذه الصورة الدراسية بالتفصيل"
@@ -53,7 +51,7 @@ if st.button("🚀 إرسال", type="primary"):
                 st.markdown(response.text)
                 
             except Exception as e:
-                st.error(f"حدث خطأ أثناء الاتصال بالمنصة: {e}")
+                st.error("⚠️ تم استنفاد الحد المؤقت للطلبات (خطأ 429). يرجى الانتظار دقيقة واحدة فقط ثم إعادة المحاولة.")
 
 # ميزة الامتحانات التفاعلية التلقائية بناءً على الشرح السابق
 if "last_explanation" in st.session_state:
@@ -71,7 +69,7 @@ if "last_explanation" in st.session_state:
                 st.markdown("### أسئلة الاختبار:")
                 st.markdown(quiz_response.text)
             except Exception as e:
-                st.error(f"حدث خطأ أثناء توليد الامتحان: {e}")
+                st.error("⚠️ حدث ضغط مؤقت، يرجى الانتظار دقيقة والمحاولة مجدداً.")
 
 # ذيل الصفحة
 st.divider()
