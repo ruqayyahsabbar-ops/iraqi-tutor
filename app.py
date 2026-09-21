@@ -36,7 +36,7 @@ grade = st.sidebar.selectbox(
     ]
 )
 
-# إضافة المواد الجديدة (حاسوب، فرنسي، كردي) مع بقية المواد
+# المواد الدراسية
 subject = st.sidebar.selectbox(
     "المادة الدراسية:",
     [
@@ -60,9 +60,8 @@ admin_mode = st.sidebar.checkbox("تفعيل وضع رفع الكتب (Admin)")
 
 uploaded_pdfs = []
 if admin_mode:
-    st.sidebar.info(f"أنتِ الآن في وضع المدير. يمكنكِ رفع **عدة كتب** لمادة ({subject}) مثل كتاب الطالب، النشاط، أو الأجزاء:")
+    st.sidebar.info(f"أنتِ الآن في وضع المدير. يمكنكِ رفع **عدة كتب** لمادة ({subject}):")
     
-    # ميزة رفع عدة ملفات PDF معاً
     uploaded_pdfs = st.sidebar.file_uploader(
         f"ارفع كتب ({subject} - {grade}) بصيغة PDF:", 
         type=["pdf"], 
@@ -85,7 +84,7 @@ exam_mode = st.sidebar.checkbox("📝 تفعيل وضع الامتحان الس�
 # حقل إدخال السؤال أو الموضوع
 user_question = st.text_input(
     f"✍️ اكتب سؤالك أو العنوان في مادة ({subject} - {grade}):",
-    placeholder="مثال: قانون أوم، الاستثناء، البرمجة، القواعد..."
+    placeholder="مثال: التصنيف، قانون أوم، الاستثناء..."
 )
 
 # إذا تم تفعيل وضع الامتحان
@@ -99,43 +98,50 @@ if st.button("🚀 ابحث عن الإجابة", type="primary"):
     if not user_question.strip() and not uploaded_image:
         st.warning("⚠️ الرجاء كتابة السؤال أو رفع صورة السؤال أولاً.")
     else:
-        with st.spinner("⏳ جاري البحث في كافة الكتب المرفوعة واستخراج النص الدقيق..."):
+        with st.spinner("⏳ جاري البحث الذكي في صفحات الكتب المرفوعة..."):
             
             # إذا تم رفع صورة من قبل الطالب
             if uploaded_image is not None:
                 st.image(uploaded_image, caption="الصورة المرفوعة للسؤال", use_column_width=True)
                 st.success("📸 تم استلام الصورة بنجاح وتحليلها.")
 
-            # البحث في جميع الكتب التي قمتِ برفعها للمادة
+            # البحث الذكي بالكلمات المفتاحية في جميع الكتب المرفوعة
             pdf_found_text = ""
             if uploaded_pdfs and PDF_SUPPORT:
                 try:
-                    keyword = user_question.strip()
+                    # استخراج الكلمات الأساسية من السؤال (تجاهل الكلمات القصيرة مثل في، ما، هو)
+                    query_words = [w for w in user_question.strip().split() if len(w) > 2]
+                    if not query_words:
+                        query_words = [user_question.strip()]
+
                     for pdf_file in uploaded_pdfs:
                         reader = pypdf.PdfReader(pdf_file)
                         for idx, page in enumerate(reader.pages):
                             page_text = page.extract_text()
-                            if page_text and keyword.lower() in page_text.lower():
-                                pdf_found_text += f"\n\n📄 **مطابقة من كتاب ({pdf_file.name}) - الصفحة ({idx + 1}):**\n{page_text[:500]}...\n"
+                            if page_text:
+                                # التحقق مما إذا كانت إحدى الكلمات الأساسية موجودة في الصفحة
+                                match_count = sum(1 for word in query_words if word.lower() in page_text.lower())
+                                if match_count > 0 or user_question.strip().lower() in page_text.lower():
+                                    pdf_found_text += f"\n\n📄 **مطابقة من كتاب ({pdf_file.name}) - الصفحة ({idx + 1}):**\n{page_text[:800]}...\n"
+                                    break # الانتقال للكتاب التالي أو إيقاف البحث عند أول مطابقة قوية
                 except Exception as e:
                     st.error(f"حدث خطأ في قراءة إحدى ملفات الـ PDF: {e}")
 
             # عرض النتيجة للجميع
-            st.success(f"✅ الإجابة المعتمدة لمادة ({subject} - {grade}):")
+            st.success(f"✅ الإجابة المستخرجة لمادة ({subject} - {grade}):")
             
             query_text = user_question if user_question.strip() else "السؤال المرفق بالصورة"
             
             if pdf_found_text:
-                st.markdown(f"### النصوص المستخرجة من كتب المنهج:{pdf_found_text}")
+                st.markdown(f"### النصوص المطابقة من الكتاب المدرسي:{pdf_found_text}")
             else:
                 st.markdown(f"""
                 ### الموضوع: {query_text}
                 
-                * **النص الحرفي من المنهج:** يعتمد هذا السؤال على الصيغة الرسمية الواردة في طبعة كتب {subject} للمرحلة ({grade}) المعتمدة.
+                * **النص الحرفي من المنهج:** لم يتم العثور على مطابقة دقيقة بالكلمات في الكتاب المرفوع، تأكد من كتابة كلمة مفتاحية رئيسية (مثل: التصنيف، الخلية، الوراثة).
                 * **النقاط والخطوات النموذجية:**
                   1. **التعريف / القاعدة الأساسية:** يكتب الطالب النص العلمي أو المصطلح بدقة دون أي نقص لضمان الدرجة كاملة.
-                  2. **التوضيح العلمي:** التفاصيل أو الأمثلة أو القواعد (حسب المادة مثل الحاسوب والفرنسي والكردي) كما وردت في المنهج المقرر.
-                  3. **ملاحظة مركز الفحص:** يُحاسب الطالب على الدقة الإملائية والعلمية للتعاريف والأسئلة الوزارية أو المدرسية.
+                  2. **التوضيح العلمي:** التفاصيل أو الأمثلة كما وردت في المنهج المقرر.
                 """)
 
 st.divider()
