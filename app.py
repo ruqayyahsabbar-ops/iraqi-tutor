@@ -34,8 +34,8 @@ if st.button("🚀 إرسال", type="primary"):
     else:
         with st.spinner("... جاري التفكير والبحث في المنهج الدراسي"):
             try:
-                # استخدام أحدث نموذج متعدد الوسائط (يدعم النصوص والصور معاً)
-                model = genai.GenerativeModel('gemini-2.5-flash')
+                # استخدام النموذج الأحدث الموصى به من رسالة الخطأ
+                model = genai.GenerativeModel('gemini-3.6-flash')
                 
                 # تجهيز محتوى الطلب بناءً على وجود صورة أو نص
                 if uploaded_image is not None:
@@ -64,7 +64,7 @@ if "last_explanation" in st.session_state:
     if st.button("💡 نعم، ابدأ الامتحان القصير"):
         with st.spinner("جاري إعداد الأسئلة..."):
             try:
-                quiz_model = genai.GenerativeModel('gemini-2.5-flash')
+                quiz_model = genai.GenerativeModel('gemini-3.6-flash')
                 quiz_prompt = f"بناءً على الشرح التالي الذي قدمناه للتو، اصنع امتحان قصير من 3 أسئلة اختيار من متعدد أو أسئلة قصيرة للطالب، واجعل الأسئلة واضحة:\n\n{st.session_state['last_explanation']}"
                 
                 quiz_response = quiz_model.generate_content(quiz_prompt)
@@ -76,3 +76,4 @@ if "last_explanation" in st.session_state:
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
+                
