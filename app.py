@@ -1,6 +1,6 @@
 import streamlit as st
 import os
-
+import json
 # محاولة استيراد مكتبات قراءة الـ PDF وتحويل الصور
 try:
     import pypdf
@@ -18,6 +18,16 @@ st.set_page_config(
     page_icon="📚",
     layout="centered"
 )
+
+BOOKS_FILE = "books.json"
+
+if os.path.exists(BOOKS_FILE):
+    with open(BOOKS_FILE, "r", encoding="utf-8") as f:
+        books_db = json.load(f)
+else:
+    books_db = {}
+
+st.title("📚 مساعد المنهج العراقي الشامل")
 
 st.title("📚 مساعد المنهج العراقي الشامل")
 st.write("ارفعي كتاب المنهج المصور (PDF)، وسيقوم التطبيق بقراءة أوراق الكتاب واستخراج الإجابة الحقيقية منها فوراً وبدون أي مفاتيح خارجية.")
