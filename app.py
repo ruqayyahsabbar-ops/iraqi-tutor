@@ -9,11 +9,45 @@ st.set_page_config(
     layout="centered"
 )
 
-# ضبط المفتاح الأساسي مباشرة
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-else:
-    st.error("⚠️ الرجاء تعيين مفتاح GEMINI_API_KEY في إعدادات Secrets.")
+# جلب المفاتيح المتعددة من الـ Secrets بأمان
+def get_api_keys():
+    keys = []
+    for i in range(1, 6):
+        key_name = "GEMINI_API_KEY" if i == 1 else f"GEMINI_API_KEY_{i}"
+        if key_name in st.secrets and st.secrets[key_name]:
+            keys.append(st.secrets[key_name])
+    return keys
+
+# دالة التدوير السريع باستخدام النموذج المحدث والمدعوم
+def generate_with_rotation(prompt_or_contents):
+    keys = get_api_keys()
+    
+    if not keys:
+        st.error("⚠️ الرجاء تعيين مفاتيح الـ API في إعدادات Secrets.")
+        return None
+
+    # استخدام أحدث نموذج فلاش مدعوم وسريع
+    model_name = 'gemini-2.5-flash'
+
+    for key in keys:
+        try:
+            genai.configure(api_key=key)
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt_or_contents)
+            return response
+        except Exception as e:
+            error_str = str(e)
+            # إذا نفد رصيد المفتاح الحالي، انتقل للمفتاح التالي فوراً
+            if "429" in error_str or "quota" in error_str.lower():
+                continue
+            else:
+                # إذا ظهر خطأ آخر غير النفاد، جرب المفتاح التالي أو أظهر الخطأ إذا انتهت المفاتيح
+                if key == keys[-1]:
+                    raise e
+                continue
+                
+    st.error("⚠️ عذراً، ضغط شديد مؤقت على جميع المفاتيح. يرجى الانتظار ثوانٍ معدودة والمحاولة.")
+    return None
 
 # عنوان التطبيق
 st.title("📚 مساعد المنهج العراقي الذكي")
@@ -32,22 +66,21 @@ if st.button("🚀 إرسال", type="primary"):
     if not user_question.strip() and not uploaded_image:
         st.warning("⚠️ الرجاء كتابة سؤالك أولاً أو إرفاق صورة قبل الضغط على الزر.")
     else:
-        with st.spinner("⏳ جاري توليد الإجابة..."):
+        with st.spinner("⏳ جاري الإجابة..."):
             try:
-                # استخدام النموذج بالطريقة الصحيحة والمدعومة
-                model = genai.GenerativeModel('gemini-1.5-flash')
-                
                 if uploaded_image is not None:
                     image = PIL.Image.open(uploaded_image)
                     prompt_text = user_question.strip() if user_question.strip() else "اشرح هذه الصورة الدراسية بالتفصيل"
-                    response = model.generate_content([prompt_text, image])
+                    content_payload = [prompt_text, image]
                 else:
-                    prompt_text = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
-                    response = model.generate_content(prompt_text)
+                    content_payload = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
                 
-                st.session_state["last_explanation"] = response.text
-                st.success("💡 إليك الإجابة النموذجية:")
-                st.markdown(response.text)
+                response = generate_with_rotation(content_payload)
+                
+                if response:
+                    st.session_state["last_explanation"] = response.text
+                    st.success("💡 إليك الإجابة النموذجية:")
+                    st.markdown(response.text)
                 
             except Exception as e:
                 st.error(f"حدث خطأ: {e}")
@@ -61,15 +94,16 @@ if "last_explanation" in st.session_state:
     if st.button("💡 نعم، ابدأ الامتحان القصير"):
         with st.spinner("⏳ جاري إعداد الأسئلة..."):
             try:
-                quiz_model = genai.GenerativeModel('gemini-1.5-flash')
                 quiz_prompt = f"بناءً على الشرح التالي الذي قدمناه للتو، اصنع امتحان قصير من 3 أسئلة اختيار من متعدد أو أسئلة قصيرة للطالب، واجعل الأسئلة واضحة:\n\n{st.session_state['last_explanation']}"
                 
-                quiz_response = quiz_model.generate_content(quiz_prompt)
-                st.markdown("### أسئلة الاختبار:")
-                st.markdown(quiz_response.text)
+                quiz_response = generate_with_rotation(quiz_prompt)
+                if quiz_response:
+                    st.markdown("### أسئلة الاختبار:")
+                    st.markdown(quiz_response.text)
             except Exception as e:
                 st.error(f"حدث خطأ أثناء توليد الامتحان: {e}")
 
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
+        
