@@ -24,15 +24,15 @@ if st.button("🚀 توليد الإجابة الحرفية من المنهج", 
     else:
         with st.spinner("⏳ جاري الاتصال بالذكاء الاصطناعي وجلب النص الحرفي للمنهج العراقي..."):
             try:
-                # سحب مفتاح الـ API الصحيح (الذي يبدأ بـ AIzaSy) من إعدادات Secrets
+                # سحب مفتاح الـ API من إعدادات Secrets
                 gemini_api_key = st.secrets.get("GEMINI_API_KEY", "")
                 
                 if not gemini_api_key:
                     st.error("⚠️ تنبيه: يرجى إضافة مفتاح `GEMINI_API_KEY` في إعدادات Secrets الخاصة بـ Streamlit أولاً.")
                 else:
-                    # تفعيل المفتاح والاتصال بمكتبة جيميناي الرسمية
+                    # تفعيل المفتاح والاتصال بمكتبة جيميناي الرسمية باستخدام نموذج gemini-pro المستقر
                     genai.configure(api_key=gemini_api_key)
-                    model = genai.GenerativeModel('gemini-1.5-flash')
+                    model = genai.GenerativeModel('gemini-pro')
                     
                     # توجيه دقيق للذكاء الاصطناعي ليلتزم حصراً بالمنهج العراقي وبشكل حرفي
                     prompt_text = f"""
@@ -53,7 +53,7 @@ if st.button("🚀 توليد الإجابة الحرفية من المنهج", 
                         
             except Exception as e:
                 st.error(f"حدث خطأ في الاتصال: {e}")
-                st.info("تأكدِ أن المفتاح المخزن في Secrets هو مفتاح Gemini API الصحيح (يبدأ بـ AQ).")
+                st.info("تأكدِ أن المفتاح المخزن في Secrets هو مفتاح Gemini API الصحيح.")
 
 # ذيل الصفحة
 st.divider()
