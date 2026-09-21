@@ -9,25 +9,25 @@ st.set_page_config(
     layout="centered"
 )
 
-# جلب المفاتيح المتعددة من الـ Secrets بأمان
+# دالة جلب المفاتيح المتعددة لدعم آلاف الطلبات
 def get_api_keys():
     keys = []
-    for i in range(1, 6):
+    for i in range(1, 11): # يدعم حتى 10 مفاتيح لتتحمل الضغط الكبير
         key_name = "GEMINI_API_KEY" if i == 1 else f"GEMINI_API_KEY_{i}"
         if key_name in st.secrets and st.secrets[key_name]:
             keys.append(st.secrets[key_name])
     return keys
 
-# دالة التدوير السريع باستخدام النموذج المحدث والمدعوم
+# دالة التدوير الذكية بالنموذج الصحيح المطلوبة من جوجل
 def generate_with_rotation(prompt_or_contents):
     keys = get_api_keys()
     
     if not keys:
-        st.error("⚠️ الرجاء تعيين مفاتيح الـ API في إعدادات Secrets.")
+        st.error("⚠️ الرجاء تعيين مفتاح GEMINI_API_KEY في إعدادات Secrets.")
         return None
 
-    # استخدام أحدث نموذج فلاش مدعوم وسريع
-    model_name = 'gemini-2.5-flash'
+    # استخدام الموديل الصحيح المحدث الذي طلبته جوجل في رسالة الخطأ
+    model_name = 'gemini-3.6-flash'
 
     for key in keys:
         try:
@@ -37,16 +37,15 @@ def generate_with_rotation(prompt_or_contents):
             return response
         except Exception as e:
             error_str = str(e)
-            # إذا نفد رصيد المفتاح الحالي، انتقل للمفتاح التالي فوراً
+            # إذا نفد رصيد المفتاح الحالي، انتقل للمفتاح التالي فوراً لتفادي الضغط
             if "429" in error_str or "quota" in error_str.lower():
                 continue
             else:
-                # إذا ظهر خطأ آخر غير النفاد، جرب المفتاح التالي أو أظهر الخطأ إذا انتهت المفاتيح
                 if key == keys[-1]:
                     raise e
                 continue
                 
-    st.error("⚠️ عذراً، ضغط شديد مؤقت على جميع المفاتيح. يرجى الانتظار ثوانٍ معدودة والمحاولة.")
+    st.error("⚠️ الضغط عالي جداً حالياً، يرجى الانتظار ثوانٍ معدودة والمحاولة.")
     return None
 
 # عنوان التطبيق
@@ -106,4 +105,4 @@ if "last_explanation" in st.session_state:
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
-        
+            
