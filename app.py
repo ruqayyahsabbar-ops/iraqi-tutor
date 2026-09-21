@@ -49,15 +49,24 @@ subject = st.sidebar.selectbox(
     ]
 )
 
-# ==================== لوحة التحكم الخاصة بكِ (رفع الكتب للنظام) ====================
+# ==================== لوحة التحكم الخاصة بكِ (رفع عدة كتب للنظام) ====================
 st.sidebar.divider()
 st.sidebar.subheader("🔒 لوحة التحكم (خاصة بكِ فقط)")
 admin_mode = st.sidebar.checkbox("تفعيل وضع رفع الكتب (Admin)")
 
-uploaded_pdf = None
+uploaded_pdfs = []
 if admin_mode:
-    st.sidebar.info("أنتِ الآن في وضع المدير. ارفعي كتب الـ PDF لتغذية النظام بالمعلومات:")
-    uploaded_pdf = st.sidebar.file_uploader(f"ارفع كتاب ({subject} - {grade}) بصيغة PDF:", type=["pdf"])
+    st.sidebar.info(f"أنتِ الآن في وضع المدير. يمكنكِ رفع **عدة كتب** لمادة ({subject}) مثل كتاب الطالب، النشاط، الجزء الأول والثاني:")
+    
+    # ميزة رفع عدة ملفات PDF معاً (`accept_multiple_files=True`)
+    uploaded_pdfs = st.sidebar.file_uploader(
+        f"ارفع كتب ({subject} - {grade}) بصيغة PDF:", 
+        type=["pdf"], 
+        accept_multiple_files=True
+    )
+    
+    if uploaded_pdfs:
+        st.sidebar.success(f"✅ تم رفع {len(uploaded_pdfs)} ملفاً بنجاح لهذه المادة!")
 # =================================================================================
 
 st.sidebar.divider()
@@ -86,25 +95,26 @@ if st.button("🚀 ابحث عن الإجابة", type="primary"):
     if not user_question.strip() and not uploaded_image:
         st.warning("⚠️ الرجاء كتابة السؤال أو رفع صورة السؤال أولاً.")
     else:
-        with st.spinner("⏳ جاري البحث واستخراج النص الدقيق..."):
+        with st.spinner("⏳ جاري البحث في كافة الكتب المرفوعة واستخراج النص الدقيق..."):
             
             # إذا تم رفع صورة من قبل الطالب
             if uploaded_image is not None:
                 st.image(uploaded_image, caption="الصورة المرفوعة للسؤال", use_column_width=True)
                 st.success("📸 تم استلام الصورة بنجاح وتحليلها.")
 
-            # إذا قمتِ أنتِ برفع كتاب PDF في لوحة التحكم، سيتم البحث في محتواه
+            # البحث في جميع الكتب التي قمتِ برفعها للمادة
             pdf_found_text = ""
-            if uploaded_pdf is not None and PDF_SUPPORT:
+            if uploaded_pdfs and PDF_SUPPORT:
                 try:
-                    reader = pypdf.PdfReader(uploaded_pdf)
                     keyword = user_question.strip()
-                    for idx, page in enumerate(reader.pages):
-                        page_text = page.extract_text()
-                        if page_text and keyword.lower() in page_text.lower():
-                            pdf_found_text += f"\n\n📄 **مطابقة من كتاب النظام في الصفحة ({idx + 1}):**\n{page_text[:600]}..."
+                    for pdf_file in uploaded_pdfs:
+                        reader = pypdf.PdfReader(pdf_file)
+                        for idx, page in enumerate(reader.pages):
+                            page_text = page.extract_text()
+                            if page_text and keyword.lower() in page_text.lower():
+                                pdf_found_text += f"\n\n📄 **مطابقة من كتاب ({pdf_file.name}) - الصفحة ({idx + 1}):**\n{page_text[:500]}...\n"
                 except Exception as e:
-                    st.error(f"حدث خطأ في قراءة ملف الـ PDF: {e}")
+                    st.error(f"حدث خطأ في قراءة إحدى ملفات الـ PDF: {e}")
 
             # عرض النتيجة للجميع
             st.success(f"✅ الإجابة المعتمدة لمادة ({subject} - {grade}):")
@@ -112,12 +122,12 @@ if st.button("🚀 ابحث عن الإجابة", type="primary"):
             query_text = user_question if user_question.strip() else "السؤال المرفق بالصورة"
             
             if pdf_found_text:
-                st.markdown(f"### النص المستخرج من كتاب المنهج:{pdf_found_text}")
+                st.markdown(f"### النصوص المستخرجة من كتب المنهج:{pdf_found_text}")
             else:
                 st.markdown(f"""
                 ### الموضوع: {query_text}
                 
-                * **النص الحرفي من المنهج:** يعتمد هذا السؤال على الصيغة الرسمية الواردة في طبعة كتاب {subject} للمرحلة ({grade}) المعتمدة.
+                * **النص الحرفي من المنهج:** يعتمد هذا السؤال على الصيغة الرسمية الواردة في طبعة كتب {subject} للمرحلة ({grade}) المعتمدة.
                 * **النقاط والخطوات النموذجية:**
                   1. **التعريف / القانون الأساسي:** يكتب الطالب القانون أو النص العلمي بدقة دون أي نقص لضمان الدرجة كاملة.
                   2. **التوضيح العلمي:** التفاصيل والرسوم أو الإعراب التفصيلي (حسب المادة) كما وردت في المنهج المقرر.
@@ -126,4 +136,4 @@ if st.button("🚀 ابحث عن الإجابة", type="primary"):
 
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>منصة المنهج العراقي التعليمية 💡</p>", unsafe_order_html=True)
-            
+                
