@@ -1,8 +1,8 @@
 import streamlit as st
-import google.generativeai as genai
+import requests
+import json
 import PIL.Image
-import random
-import os
+import io
 
 # إعدادات الصفحة
 st.set_page_config(
@@ -11,29 +11,33 @@ st.set_page_config(
     layout="centered"
 )
 
-# الرمز الذي حصلتِ عليه من أختكِ
-token_value = "AQ.Ab8RN6KV-Cw9PBQnvA4FBixA0S00uRKe9MYnweo1UvOTH4_BQQ"
+# الرمز الخاص بكِ
+TOKEN = "AQ.Ab8RN6KV-Cw9PBQnvA4FBixA0S00uRKe9MYnweo1UvOTH4_BQQ"
 
-# إعداد المصادقة كـ Bearer Token ليتوافق مع رموز الرمز الذي ظهر لديكِ
-os.environ["GEMINI_API_KEY"] = token_value
-
-def generate_response(prompt_or_contents):
+def call_gemini_rest(prompt_text):
+    # رابط الاتصال المباشر لخدمة جيميناي
+    url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
+    
+    headers = {
+        "Authorization": f"Bearer {TOKEN}",
+        "Content-Type": "application/json"
+    }
+    
+    payload = {
+        "contents": [{
+            "parts": [{"text": prompt_text}]
+        }]
+    }
+    
     try:
-        # استخدام التكوين المباشر
-        genai.configure(api_key=token_value)
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        response = model.generate_content(prompt_or_contents)
-        return response
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            res_json = response.json()
+            return res_json['candidates'][0]['content']['parts'][0]['text']
+        else:
+            return f"خطأ في الاتصال (رمز الاستجابة {response.status_code}): {response.text}"
     except Exception as e:
-        # محاولة ثانية بالطريقة العامة في حال طلب النظام ذلك
-        try:
-            import google.auth
-            # تمرير الرمز كبيانات اعتماد
-            client = genai.GenerativeModel('gemini-1.5-flash')
-            return client.generate_content(prompt_or_contents)
-        except Exception as inner_e:
-            st.error(f"تفاصيل الخطأ: {inner_e}")
-            return None
+        return f"حدث خطأ: {e}"
 
 # عنوان التطبيق
 st.title("📚 مساعد المنهج العراقي الذكي")
@@ -53,25 +57,16 @@ if st.button("🚀 إرسال", type="primary"):
         st.warning("⚠️ الرجاء كتابة سؤالك أولاً أو إرفاق صورة قبل الضغط على الزر.")
     else:
         with st.spinner("⏳ جاري الإجابة..."):
-            try:
-                if uploaded_image is not None:
-                    image = PIL.Image.open(uploaded_image)
-                    prompt_text = user_question.strip() if user_question.strip() else "اشرح هذه الصورة الدراسية بالتفصيل"
-                    content_payload = [prompt_text, image]
-                else:
-                    content_payload = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
-                
-                response = generate_response(content_payload)
-                
-                if response:
-                    st.session_state["last_explanation"] = response.text
-                    st.success("💡 إليك الإجابة النموذجية:")
-                    st.markdown(response.text)
-                
-            except Exception as e:
-                st.error(f"حدث خطأ: {e}")
+            prompt_text = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
+            
+            answer = call_gemini_rest(prompt_text)
+            
+            if answer:
+                st.session_state["last_explanation"] = answer
+                st.success("💡 إليك الإجابة النموذجية:")
+                st.markdown(answer)
 
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
-
+    
