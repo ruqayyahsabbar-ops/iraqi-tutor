@@ -9,7 +9,7 @@ st.set_page_config(
     layout="centered"
 )
 
-# ضبط المفتاح الأساسي مباشرة وبسرعة
+# ضبط المفتاح الأساسي مباشرة
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 else:
@@ -34,7 +34,7 @@ if st.button("🚀 إرسال", type="primary"):
     else:
         with st.spinner("⏳ جاري توليد الإجابة..."):
             try:
-                # استخدام الموديل الأسرع والأكثر استقراراً
+                # استخدام النموذج بالطريقة الصحيحة والمدعومة
                 model = genai.GenerativeModel('gemini-1.5-flash')
                 
                 if uploaded_image is not None:
@@ -73,4 +73,3 @@ if "last_explanation" in st.session_state:
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
-                    
