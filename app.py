@@ -17,7 +17,7 @@ else:
 
 # عنوان التطبيق
 st.title("📚 مساعد المنهج العراقي الذكي")
-st.write("أهلاً بكِ! أنا مساعدكِ الذكي لمساعدة لجميع المواد الدراسية للمنهج العراقي.")
+st.write("أهلاً بكِ! أنا مساعدكِ الذكي لجميع المواد الدراسية للمنهج العراقي.")
 
 st.divider()
 
@@ -34,19 +34,18 @@ if st.button("🚀 إرسال", type="primary"):
     else:
         with st.spinner("... جاري التفكير والبحث في المنهج الدراسي"):
             try:
-                # استخدام النموذج المستقر والمدعم لل النصوص
+                # استخدام النموذج القياسي المتوافق مع مكتبة بايثون
                 model = genai.GenerativeModel('gemini-pro')
                 
-                # تجهيز محتوى الطلب (Prompt)
-                prompt_text = "أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: " + user_question
-                
-                # إذا كانت هناك صورة مرفوعة، نستخدم نموذج يدعم الصور مثل gemini-pro-vision أو نمررها بالطريقة المتوافقة
+                # تجهيز محتوى الطلب بناءً على وجود صورة أو نص
                 if uploaded_image is not None:
                     image = PIL.Image.open(uploaded_image)
-                    # لضمان عدم حدوث خطأ مع الصور، سنستخدم النموذج المخصص للرؤية إذا تطلب الأمر، أو نمرر الصورة مع gemini-pro
+                    # استخدام نموذج الرؤية المخصص للصور إن وجدت صورة مرفوعة
                     vision_model = genai.GenerativeModel('gemini-pro-vision')
-                    response = vision_model.generate_content([user_question if user_question else "اشرح هذه الصورة الدراسية", image])
+                    prompt_text = user_question.strip() if user_question.strip() else "اشرح هذه الصورة الدراسية بالتفصيل"
+                    response = vision_model.generate_content([prompt_text, image])
                 else:
+                    prompt_text = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
                     response = model.generate_content(prompt_text)
                 
                 # حفظ الإجابة في الجلسة لاستخدامها في الامتحان
