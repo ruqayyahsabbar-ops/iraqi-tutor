@@ -11,7 +11,7 @@ st.set_page_config(
 )
 
 # الرمز الخاص بكِ الذي يظهر في جوجل
-TOKEN = "AQ.Ab8RN6Lo3RQo0mh5wIGP3te9th..."
+TOKEN = "AQ.Ab8RN6Lo3RQo0mh5wlGP3te9th2wDeK9gh7dYIJ2OelGhArmNQ"
 
 def call_gemini_rest(prompt_text):
     # استخدام المسار المباشر لخدمة توليد المحتوى
