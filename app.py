@@ -34,22 +34,20 @@ if st.button("🚀 إرسال", type="primary"):
     else:
         with st.spinner("... جاري التفكير والبحث في المنهج الدراسي"):
             try:
-                # استخدام النموذج المحدث والمستقر لضمان عدم ظهور أخطاء
-                model = genai.GenerativeModel('gemini-1.5-pro')
+                # استخدام النموذج المستقر والمدعم لل النصوص
+                model = genai.GenerativeModel('gemini-pro')
                 
                 # تجهيز محتوى الطلب (Prompt)
-                prompt_parts = [
-                    "أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو."
-                ]
+                prompt_text = "أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: " + user_question
                 
-                if user_question.strip():
-                    prompt_parts.append(user_question)
-                    
+                # إذا كانت هناك صورة مرفوعة، نستخدم نموذج يدعم الصور مثل gemini-pro-vision أو نمررها بالطريقة المتوافقة
                 if uploaded_image is not None:
                     image = PIL.Image.open(uploaded_image)
-                    prompt_parts.append(image)
-                
-                response = model.generate_content(prompt_parts)
+                    # لضمان عدم حدوث خطأ مع الصور، سنستخدم النموذج المخصص للرؤية إذا تطلب الأمر، أو نمرر الصورة مع gemini-pro
+                    vision_model = genai.GenerativeModel('gemini-pro-vision')
+                    response = vision_model.generate_content([user_question if user_question else "اشرح هذه الصورة الدراسية", image])
+                else:
+                    response = model.generate_content(prompt_text)
                 
                 # حفظ الإجابة في الجلسة لاستخدامها في الامتحان
                 st.session_state["last_explanation"] = response.text
@@ -69,7 +67,7 @@ if "last_explanation" in st.session_state:
     if st.button("💡 نعم، ابدأ الامتحان القصير"):
         with st.spinner("جاري إعداد الأسئلة..."):
             try:
-                quiz_model = genai.GenerativeModel('gemini-1.5-pro')
+                quiz_model = genai.GenerativeModel('gemini-pro')
                 quiz_prompt = f"بناءً على الشرح التالي الذي قدمناه للتو، اصنع امتحان قصير من 3 أسئلة اختيار من متعدد أو أسئلة قصيرة للطالب، واجعل الأسئلة واضحة:\n\n{st.session_state['last_explanation']}"
                 
                 quiz_response = quiz_model.generate_content(quiz_prompt)
@@ -81,3 +79,4 @@ if "last_explanation" in st.session_state:
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
+                
