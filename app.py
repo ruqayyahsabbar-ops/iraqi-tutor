@@ -42,14 +42,27 @@ subject = st.sidebar.selectbox("المادة الدراسية:", ["الفيزي�
 # ==================== لوحة التحكم لرفع الكتب المصورة ====================
 st.sidebar.divider()
 st.sidebar.subheader("🔒 لوحة التحكم (رفع الكتب)")
+
 admin_mode = st.sidebar.checkbox("تفعيل وضع رفع الكتب (Admin)")
 
 uploaded_pdf_file = None
+
+book_key = f"{grade}_{subject}"
 if admin_mode:
     st.sidebar.info(f"ارفعي ملف الكتاب المصور لمادة ({subject} - {grade}):")
     uploaded_pdf_file = st.sidebar.file_uploader("اختر ملف الـ PDF:", type=["pdf"])
     if uploaded_pdf_file:
-        st.sidebar.success("✅ تم رفع الملف بنجاح وجاهز للقراءة!")
+    st.sidebar.success("✅ تم رفع الملف بنجاح وجاهز للقراءة!")
+
+    if st.sidebar.button("💾 حفظ الكتاب"):
+        books_db[book_key] = {
+            "status": "saved"
+        }
+
+        with open(BOOKS_FILE, "w", encoding="utf-8") as f:
+            json.dump(books_db, f, ensure_ascii=False)
+
+        st.sidebar.success("✅ تم حفظ الكتاب")
 # =========================================================================
 
 st.sidebar.divider()
