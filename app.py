@@ -2,7 +2,6 @@ import streamlit as st
 import requests
 import json
 import PIL.Image
-import io
 
 # إعدادات الصفحة
 st.set_page_config(
@@ -11,11 +10,10 @@ st.set_page_config(
     layout="centered"
 )
 
-# الرمز الخاص بكِ
-TOKEN = "AQ.Ab8RN6KV-Cw9PBQnvA4FBixA0S00uRKe9MYnweo1UvOTH4_BQQ"
+# ضعي المفتاح الذي نسختيه هنا بين علامتي التنصيص
+TOKEN = "AQ.Ab8RN6Lcq-1APEZVqeg1-tmCEALlzmGjQBuu7H7tppu7hiMFZQ"
 
 def call_gemini_rest(prompt_text):
-    # رابط الاتصال المباشر لخدمة جيميناي
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     
     headers = {
@@ -69,4 +67,4 @@ if st.button("🚀 إرسال", type="primary"):
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
-    
+        
