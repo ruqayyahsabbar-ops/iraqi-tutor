@@ -10,10 +10,11 @@ st.set_page_config(
     layout="centered"
 )
 
-# ضعي المفتاح الذي نسختيه هنا بين علامتي التنصيص
-TOKEN = "AQ.Ab8RN6Lcq-1APEZVqeg1-tmCEALlzmGjQBuu7H7tppu7hiMFZQ"
+# الرمز الخاص بكِ الذي يظهر في جوجل
+TOKEN = "AQ.Ab8RN6Lo3RQo0mh5wIGP3te9th..."
 
 def call_gemini_rest(prompt_text):
+    # استخدام المسار المباشر لخدمة توليد المحتوى
     url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent"
     
     headers = {
@@ -67,4 +68,4 @@ if st.button("🚀 إرسال", type="primary"):
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
-        
+                
