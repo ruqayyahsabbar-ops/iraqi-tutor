@@ -34,16 +34,14 @@ if st.button("🚀 إرسال", type="primary"):
     else:
         with st.spinner("... جاري التفكير والبحث في المنهج الدراسي"):
             try:
-                # استخدام النموذج القياسي المتوافق مع مكتبة بايثون
-                model = genai.GenerativeModel('gemini-pro')
+                # استخدام أحدث نموذج متعدد الوسائط (يدعم النصوص والصور معاً)
+                model = genai.GenerativeModel('gemini-2.5-flash')
                 
                 # تجهيز محتوى الطلب بناءً على وجود صورة أو نص
                 if uploaded_image is not None:
                     image = PIL.Image.open(uploaded_image)
-                    # استخدام نموذج الرؤية المخصص للصور إن وجدت صورة مرفوعة
-                    vision_model = genai.GenerativeModel('gemini-pro-vision')
                     prompt_text = user_question.strip() if user_question.strip() else "اشرح هذه الصورة الدراسية بالتفصيل"
-                    response = vision_model.generate_content([prompt_text, image])
+                    response = model.generate_content([prompt_text, image])
                 else:
                     prompt_text = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
                     response = model.generate_content(prompt_text)
@@ -66,7 +64,7 @@ if "last_explanation" in st.session_state:
     if st.button("💡 نعم، ابدأ الامتحان القصير"):
         with st.spinner("جاري إعداد الأسئلة..."):
             try:
-                quiz_model = genai.GenerativeModel('gemini-pro')
+                quiz_model = genai.GenerativeModel('gemini-2.5-flash')
                 quiz_prompt = f"بناءً على الشرح التالي الذي قدمناه للتو، اصنع امتحان قصير من 3 أسئلة اختيار من متعدد أو أسئلة قصيرة للطالب، واجعل الأسئلة واضحة:\n\n{st.session_state['last_explanation']}"
                 
                 quiz_response = quiz_model.generate_content(quiz_prompt)
@@ -78,4 +76,3 @@ if "last_explanation" in st.session_state:
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
-                
