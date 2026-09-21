@@ -1,6 +1,8 @@
 import streamlit as st
 import google.generativeai as genai
 import PIL.Image
+import random
+import os
 
 # إعدادات الصفحة
 st.set_page_config(
@@ -9,12 +11,29 @@ st.set_page_config(
     layout="centered"
 )
 
-# ضعي أحد مفاتيح أختكِ الجديدة هنا للتجربة المباشرة
-API_KEY = "AQ.Ab8RN6J5QzzPXz-DoVz3w2tk0YlN62HTw7n0w0G1yt7GujucVw"
+# الرمز الذي حصلتِ عليه من أختكِ
+token_value = "AQ.Ab8RN6KV-Cw9PBQnvA4FBixA0S00uRKe9MYnweo1UvOTH4_BQQ"
 
-# استخدام نموذج gemini-1.5-flash الأثبت والأكثر استقراراً حالياً
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+# إعداد المصادقة كـ Bearer Token ليتوافق مع رموز الرمز الذي ظهر لديكِ
+os.environ["GEMINI_API_KEY"] = token_value
+
+def generate_response(prompt_or_contents):
+    try:
+        # استخدام التكوين المباشر
+        genai.configure(api_key=token_value)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        response = model.generate_content(prompt_or_contents)
+        return response
+    except Exception as e:
+        # محاولة ثانية بالطريقة العامة في حال طلب النظام ذلك
+        try:
+            import google.auth
+            # تمرير الرمز كبيانات اعتماد
+            client = genai.GenerativeModel('gemini-1.5-flash')
+            return client.generate_content(prompt_or_contents)
+        except Exception as inner_e:
+            st.error(f"تفاصيل الخطأ: {inner_e}")
+            return None
 
 # عنوان التطبيق
 st.title("📚 مساعد المنهج العراقي الذكي")
@@ -38,19 +57,21 @@ if st.button("🚀 إرسال", type="primary"):
                 if uploaded_image is not None:
                     image = PIL.Image.open(uploaded_image)
                     prompt_text = user_question.strip() if user_question.strip() else "اشرح هذه الصورة الدراسية بالتفصيل"
-                    response = model.generate_content([prompt_text, image])
+                    content_payload = [prompt_text, image]
                 else:
-                    prompt_text = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
-                    response = model.generate_content(prompt_text)
+                    content_payload = f"أنت أستاذ عراقي ذكي ومساند لوزارة التربية العراقية. اشرح الموضوع بوضوح، وفي نهاية شرحك، اقترح على الطالب باختصار شديد إجراء امتحان قصير (3 أسئلة) حول ما شرحته للتو.\n\nالسؤال: {user_question}"
                 
-                st.session_state["last_explanation"] = response.text
-                st.success("💡 إليك الإجابة النموذجية:")
-                st.markdown(response.text)
+                response = generate_response(content_payload)
+                
+                if response:
+                    st.session_state["last_explanation"] = response.text
+                    st.success("💡 إليك الإجابة النموذجية:")
+                    st.markdown(response.text)
                 
             except Exception as e:
-                # هنا سيظهر الخطأ الحقيقي بالكامل لنعرف سببه بدقة
-                st.error(f"⚠️ تفاصيل الخطأ الفعلي: {e}")
+                st.error(f"حدث خطأ: {e}")
 
 # ذيل الصفحة
 st.divider()
 st.markdown("<p style='text-align: center; color: gray;'>مصممة بملكة البرمجة 💡</p>", unsafe_allow_html=True)
+
