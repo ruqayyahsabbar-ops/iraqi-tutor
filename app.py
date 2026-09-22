@@ -1,18 +1,50 @@
 import streamlit as st
-from pdf2image import convert_from_bytes
-import pytesseract
+from pypdf import PdfReader
 
-st.title("اختبار OCR")
+st.set_page_config(
+    page_title="مساعد المنهج العراقي",
+    page_icon="📚"
+)
 
-pdf_file = st.file_uploader("ارفعي كتاب PDF", type=["pdf"])
+st.title("📚 مساعد المنهج العراقي")
+
+pdf_file = st.file_uploader(
+    "ارفعي الكتاب بصيغة PDF",
+    type=["pdf"]
+)
 
 if pdf_file:
-    pdf_bytes = pdf_file.read()
+    reader = PdfReader(pdf_file)
 
-    images = convert_from_bytes(pdf_bytes, first_page=1, last_page=1)
+    st.success(f"تم رفع الكتاب بنجاح — عدد الصفحات: {len(reader.pages)}")
 
-    st.image(images[0], caption="الصفحة الأولى")
+    search = st.text_input(
+        "🔍 ابحثي داخل الكتاب:",
+        placeholder="مثال: الخلية"
+    )
 
-    text = pytesseract.image_to_string(images[0], lang="ara+eng")
+    if search.strip():
 
-    st.text_area("النص المستخرج", text, height=300)
+        results = []
+
+        for page_number, page in enumerate(reader.pages, start=1):
+            text = page.extract_text() or ""
+
+            if search.strip().lower() in text.lower():
+                results.append((page_number, text))
+
+        if results:
+            st.success(f"وجدت الكلمة في {len(results)} صفحة")
+
+            for page_number, text in results:
+                st.subheader(f"📄 الصفحة {page_number}")
+
+                st.text_area(
+                    "النص:",
+                    text,
+                    height=250,
+                    key=f"page_{page_number}"
+                )
+
+        else:
+            st.warning("لم يتم العثور على هذه الكلمة داخل الكتاب.")
