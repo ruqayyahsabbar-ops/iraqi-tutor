@@ -157,11 +157,7 @@ question = st.text_area(
 # الحصول على الإجابة
 # =========================
 
-if st.button("🚀 الحصول على الإجابة"):
 
-    if question.strip():
-
-        with st.spinner("⏳ جاري إعداد الإجابة..."):
 if st.button("🚀 الحصول على الإجابة"):
 
     if question.strip():
