@@ -162,9 +162,15 @@ if st.button("🚀 الحصول على الإجابة"):
     if question.strip():
 
         with st.spinner("⏳ جاري إعداد الإجابة..."):
-if st.session_state.questions_count >= 15:
-    st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً)")
-    st.stop()
+if st.button("🚀 الحصول على الإجابة"):
+
+    if question.strip():
+
+        if st.session_state.questions_count >= 15:
+            st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً)")
+            st.stop()
+
+        with st.spinner("⏳ جاري إعداد الإجابة..."):
             response = client.chat.completions.create(
                 model="openai/gpt-oss-20b",
                 messages=[
