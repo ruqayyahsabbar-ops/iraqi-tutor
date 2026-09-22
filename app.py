@@ -1,5 +1,6 @@
 import streamlit as st
 from groq import Groq
+from datetime import date
 
 # =========================
 # إعداد الصفحة
@@ -18,6 +19,18 @@ st.set_page_config(
 client = Groq(
     api_key=st.secrets["GROQ_API_KEY"]
 )
+
+TODAY = str(date.today())
+
+if "day" not in st.session_state:
+    st.session_state.day = TODAY
+
+if "questions_count" not in st.session_state:
+    st.session_state.questions_count = 0
+
+if st.session_state.day != TODAY:
+    st.session_state.day = TODAY
+    st.session_state.questions_count = 0
 
 # =========================
 # الذاكرة
@@ -85,6 +98,10 @@ with st.sidebar:
     )
 
     st.divider()
+remaining = 15 - st.session_state.questions_count
+
+st.markdown("### 📊 الاستخدام اليومي")
+st.write(f"المتبقي اليوم: {remaining}")
 
     st.markdown("### 🕒 آخر الأسئلة")
 
@@ -145,7 +162,9 @@ if st.button("🚀 الحصول على الإجابة"):
     if question.strip():
 
         with st.spinner("⏳ جاري إعداد الإجابة..."):
-
+if st.session_state.questions_count >= 15:
+    st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً)")
+    st.stop()
             response = client.chat.completions.create(
                 model="openai/gpt-oss-20b",
                 messages=[
@@ -173,6 +192,7 @@ if st.button("🚀 الحصول على الإجابة"):
             answer = response.choices[0].message.content
 
         st.session_state["last_answer"] = answer
+st.session_state.questions_count += 1
 st.session_state.history.append(question)
 
         st.success("✅ تم إنشاء الإجابة")
