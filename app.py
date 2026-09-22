@@ -156,65 +156,69 @@ question = st.text_area(
 # =========================
 # الحصول على الإجابة
 # =========================
+  if st.button("🚀 الحصول على الإجابة"):
 
+if question.strip():  
 
-if st.button("🚀 الحصول على الإجابة"):
+    if st.session_state.questions_count >= 15:  
+        st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً)")  
+        st.stop()  
 
-    if question.strip():
+    with st.spinner("⏳ جاري إعداد الإجابة..."):  
+        response = client.chat.completions.create(  
+            model="openai/gpt-oss-20b",  
+            messages=[  
+                {  
+                    "role": "system",  
+                    "content": f"""
 
-        if st.session_state.questions_count >= 15:
-            st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً)")
-            st.stop()
-
-        with st.spinner("⏳ جاري إعداد الإجابة..."):
-            response = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"""
 أنت مساعد دراسي متخصص في مادة {subject}.
 
-- أجب بالعربية.
-- استخدم لغة سهلة.
-- ابدأ بتعريف مختصر.
-- ثم شرح مبسط.
-- ثم نقاط مهمة.
-- اجعل الإجابة مناسبة لطلاب المدارس.
-- صحح الأخطاء الإملائية البسيطة إن وجدت.
+أجب بالعربية.
+
+استخدم لغة سهلة.
+
+ابدأ بتعريف مختصر.
+
+ثم شرح مبسط.
+
+ثم نقاط مهمة.
+
+اجعل الإجابة مناسبة لطلاب المدارس.
+
+صحح الأخطاء الإملائية البسيطة إن وجدت.
 """
-                    },
-                    {
-                        "role": "user",
-                        "content": question
-                    }
-                ]
-            )
+},
+{
+"role": "user",
+"content": question
+}
+]
+)
 
             answer = response.choices[0].message.content
 
-st.session_state["last_answer"] = answer
-st.session_state.questions_count += 1
-st.session_state.history.append(question)
+            st.session_state["last_answer"] = answer
+            st.session_state.questions_count += 1
+            st.session_state.history.append(question)
 
-st.success("✅ تم إنشاء الإجابة")
+            st.success("✅ تم إنشاء الإجابة")
 
-st.markdown("## 📖 الإجابة")
+            st.markdown("## 📖 الإجابة")
 
-st.write(answer)
+            st.write(answer)
 
-st.markdown("### 📋 نسخة قابلة للنسخ")
+            st.markdown("### 📋 نسخة قابلة للنسخ")
 
-st.text_area(
-    "",
-    answer,
-    height=220
-)
+            st.text_area(
+                "",
+                answer,
+                height=220
+            )
 
     else:
 
-        st.warning("✏️ اكتبي سؤالاً أولاً.")
-
+        st.warning("✏️ اكتبي سؤالاً أولاً.")    
 # =========================
 # الميزات الإضافية
 # =========================
