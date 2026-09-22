@@ -1,7 +1,5 @@
 import streamlit as st
-from pathlib import Path
-from pypdf import PdfReader
-import re
+from groq import Groq
 
 # =========================
 # إعداد الصفحة
@@ -14,108 +12,42 @@ st.set_page_config(
 )
 
 # =========================
-# معلومات الصفوف والمواد
+# Groq
 # =========================
 
-GRADES = {
-    "الأول المتوسط": {
-        "folder": "grade7",
-        "subjects": {
-            "📖 اللغة العربية": "arabic.pdf",
-            "🇬🇧 اللغة الإنجليزية": "english.pdf",
-            "➗ الرياضيات": "math.pdf",
-            "🧪 العلوم": "science.pdf",
-        }
-    },
+client = Groq(
+    api_key=st.secrets["GROQ_API_KEY"]
+)
 
-    "الثاني المتوسط": {
-        "folder": "grade8",
-        "subjects": {
-            "📖 اللغة العربية": "arabic.pdf",
-            "🇬🇧 اللغة الإنجليزية": "english.pdf",
-            "➗ الرياضيات": "math.pdf",
-            "🧪 العلوم": "science.pdf",
-        }
-    },
+# =========================
+# تنسيق الواجهة
+# =========================
 
-    "الثالث المتوسط": {
-        "folder": "grade9",
-        "subjects": {
-            "📖 اللغة العربية": "arabic.pdf",
-            "🇬🇧 اللغة الإنجليزية": "english.pdf",
-            "➗ الرياضيات": "math.pdf",
-            "🧪 العلوم": "science.pdf",
-        }
-    },
+st.markdown("""
+<style>
 
-    "الرابع العلمي": {
-        "folder": "grade10_scientific",
-        "subjects": {
-            "🧬 الأحياء": "biology.pdf",
-            "🧪 الكيمياء": "chemistry.pdf",
-            "⚡ الفيزياء": "physics.pdf",
-            "➗ الرياضيات": "math.pdf",
-            "📖 اللغة العربية": "arabic.pdf",
-            "🇬🇧 اللغة الإنجليزية": "english.pdf",
-        }
-    },
-
-    "الخامس العلمي": {
-        "folder": "grade11_scientific",
-        "subjects": {
-            "🧬 الأحياء": "biology.pdf",
-            "🧪 الكيمياء": "chemistry.pdf",
-            "⚡ الفيزياء": "physics.pdf",
-            "➗ الرياضيات": "math.pdf",
-            "📖 اللغة العربية": "arabic.pdf",
-            "🇬🇧 اللغة الإنجليزية": "english.pdf",
-        }
-    },
-
-    "السادس العلمي": {
-        "folder": "grade12_scientific",
-        "subjects": {
-            "🧬 الأحياء": "biology.pdf",
-            "🧪 الكيمياء": "chemistry.pdf",
-            "⚡ الفيزياء": "physics.pdf",
-            "➗ الرياضيات": "math.pdf",
-            "📖 اللغة العربية": "arabic.pdf",
-            "🇬🇧 اللغة الإنجليزية": "english.pdf",
-        }
-    },
+.main-title{
+    text-align:center;
+    font-size:42px;
+    font-weight:bold;
+    margin-bottom:5px;
 }
 
-# =========================
-# تنسيق بسيط
-# =========================
+.subtitle{
+    text-align:center;
+    color:gray;
+    margin-bottom:30px;
+}
 
-st.markdown(
-    """
-    <style>
-    .main-title {
-        text-align: center;
-        font-size: 38px;
-        font-weight: bold;
-        margin-bottom: 5px;
-    }
+.answer-box{
+    padding:20px;
+    border-radius:15px;
+    border:1px solid #dddddd;
+    background:#f8f9fa;
+}
 
-    .subtitle {
-        text-align: center;
-        color: #777;
-        font-size: 17px;
-        margin-bottom: 30px;
-    }
-
-    .result-box {
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #ddd;
-        margin-bottom: 15px;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+</style>
+""", unsafe_allow_html=True)
 
 # =========================
 # العنوان
@@ -127,7 +59,7 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="subtitle">ابحثي داخل كتب المنهج العراقي بسهولة</div>',
+    '<div class="subtitle">اسألي أي سؤال دراسي واحصلي على شرح مبسط</div>',
     unsafe_allow_html=True
 )
 
@@ -137,148 +69,77 @@ st.markdown(
 
 with st.sidebar:
 
-    st.header("📚 المنهج الدراسي")
+    st.header("🎓 المساعد الدراسي")
 
-    grade = st.selectbox(
-        "اختاري الصف",
-        list(GRADES.keys())
+    st.info(
+        """
+يمكنكِ السؤال عن:
+
+• الأحياء
+• الكيمياء
+• الفيزياء
+• الرياضيات
+• اللغة العربية
+• اللغة الإنجليزية
+"""
     )
 
-    subjects = GRADES[grade]["subjects"]
-
-    subject = st.selectbox(
-        "اختاري المادة",
-        list(subjects.keys())
-    )
-
-    st.divider()
-
-    st.markdown("### 📌 الصف المختار")
-    st.write(grade)
-
-    st.markdown("### 📖 المادة")
-    st.write(subject)
-
 # =========================
-# تحديد ملف الكتاب
+# السؤال
 # =========================
 
-book_path = Path("ocr-result.pdf")
-
-# =========================
-# التحقق من وجود الكتاب
-# =========================
-
-if not book_path.exists():
-
-    st.info("📚 لم يتم العثور على ملف الكتاب.")
-
-    st.stop()
-# =========================
-# قراءة الكتاب
-# =========================
-
-@st.cache_data
-def extract_book(path):
-
-    reader = PdfReader(path)
-
-    pages = []
-
-    for page_number, page in enumerate(reader.pages, start=1):
-
-        text = page.extract_text() or ""
-
-        pages.append({
-            "page": page_number,
-            "text": text
-        })
-
-    return pages
-
-
-pages = extract_book(str(book_path))
-
-# =========================
-# معلومات الكتاب
-# =========================
-
-st.success(
-    f"📗 تم فتح كتاب {subject} — عدد الصفحات: {len(pages)}"
-)
-# =========================
-# المساعد الدراسي
-# =========================
-
-st.subheader("🎓 المساعد الدراسي")
-
-question = st.text_input(
-    "اكتبي سؤالك:",
-    placeholder="مثال: ما هو التنوع الأحيائي؟"
+question = st.text_area(
+    "💬 اكتبي سؤالك:",
+    placeholder="مثال: ما هو النظام البيئي؟",
+    height=150
 )
 
-if question.strip():
+# =========================
+# زر الإجابة
+# =========================
 
-    words = [
-        word.strip()
-        for word in re.findall(r'\w+', question.lower())
-        if len(word) > 2
-    ]
+if st.button("🚀 الحصول على الإجابة"):
 
-    best_page = None
-    best_score = 0
+    if not question.strip():
 
-    for item in pages:
+        st.warning("✏️ اكتبي سؤالًا أولًا.")
 
-        text = item["text"].lower()
+    else:
 
-        score = 0
+        with st.spinner("⏳ جاري إعداد الإجابة..."):
 
-        for word in words:
+            response = client.chat.completions.create(
+                model="openai/gpt-oss-20b",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": """
+أنت مساعد دراسي للطلاب.
 
-            if word in text:
-                score += 1
+اشرح بطريقة مبسطة وواضحة.
+استخدم العربية الفصحى السهلة.
+رتب الإجابة بعناوين ونقاط.
+إذا كان السؤال علمياً فاذكر التعريف والشرح.
+"""
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    }
+                ]
+            )
 
-        if score > best_score:
-            best_score = score
-            best_page = item
+            answer = response.choices[0].message.content
 
-    if best_page:
+        st.success("✅ تم إنشاء الإجابة")
 
-        full_text = best_page["text"]
-
-        answer = full_text[:700]
-
-        st.success("✅ تم العثور على إجابة محتملة")
-
-        st.markdown("## 📖 الجواب")
+        st.markdown("## 📖 الإجابة")
 
         st.markdown(
             f"""
-            <div style="
-                padding:15px;
-                border-radius:12px;
-                background:#f8f9fa;
-                border:1px solid #ddd;
-            ">
+            <div class="answer-box">
             {answer}
             </div>
             """,
             unsafe_allow_html=True
         )
-
-        st.markdown(
-            f"📄 الصفحة: {best_page['page']}"
-        )
-
-    else:
-
-        st.warning(
-            "لم أتمكن من العثور على إجابة مناسبة داخل الكتاب."
-        )
-
-else:
-
-    st.info(
-        "💬 اكتبي سؤالاً من المنهج ليتم البحث عن الإجابة."
-    )
