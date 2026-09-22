@@ -171,26 +171,9 @@ book_path = Path("ocr-result.pdf")
 
 if not book_path.exists():
 
-    st.info(
-        f"""
-        📚 كتاب **{subject}** للصف **{grade}**
-        
-        لم تتم إضافته إلى المشروع بعد.
-        
-        عندما تضيفين ملف الكتاب إلى مجلد:
-        
-        `books/{folder}/`
-        
-        وتسمينه:
-        
-        `{filename}`
-        
-        سيظهر هنا تلقائياً.
-        """
-    )
+    st.info("📚 لم يتم العثور على ملف الكتاب.")
 
     st.stop()
-
 # =========================
 # قراءة الكتاب
 # =========================
@@ -223,69 +206,79 @@ pages = extract_book(str(book_path))
 st.success(
     f"📗 تم فتح كتاب {subject} — عدد الصفحات: {len(pages)}"
 )
-
 # =========================
-# البحث
+# المساعد الدراسي
 # =========================
 
-st.subheader("🔍 البحث داخل الكتاب")
+st.subheader("🎓 المساعد الدراسي")
 
-search = st.text_input(
-    "اكتبي الكلمة أو العبارة التي تريدين البحث عنها:",
-    placeholder="مثال: التنوع الاحيائي"
+question = st.text_input(
+    "اكتبي سؤالك:",
+    placeholder="مثال: ما هو التنوع الأحيائي؟"
 )
 
-# =========================
-# تنفيذ البحث
-# =========================
+if question.strip():
 
-if search.strip():
+    words = [
+        word.strip()
+        for word in re.findall(r'\w+', question.lower())
+        if len(word) > 2
+    ]
 
-    search_text = search.strip().lower()
-
-    results = []
+    best_page = None
+    best_score = 0
 
     for item in pages:
 
-        text = item["text"]
+        text = item["text"].lower()
 
-        if search_text in text.lower():
+        score = 0
 
-            results.append(item)
+        for word in words:
 
-    # =====================
-    # النتائج
-    # =====================
+            if word in text:
+                score += 1
 
-    if results:
+        if score > best_score:
+            best_score = score
+            best_page = item
 
-        st.success(
-            f"وجدت العبارة في {len(results)} صفحة 📚"
+    if best_page:
+
+        full_text = best_page["text"]
+
+        answer = full_text[:700]
+
+        st.success("✅ تم العثور على إجابة محتملة")
+
+        st.markdown("## 📖 الجواب")
+
+        st.markdown(
+            f"""
+            <div style="
+                padding:15px;
+                border-radius:12px;
+                background:#f8f9fa;
+                border:1px solid #ddd;
+            ">
+            {answer}
+            </div>
+            """,
+            unsafe_allow_html=True
         )
 
-        for result in results:
-
-            st.markdown(
-                f"### 📄 الصفحة {result['page']}"
-            )
-
-            st.text_area(
-                "النص الموجود في الصفحة:",
-                result["text"],
-                height=250,
-                key=f"result_{result['page']}"
-            )
-
-            st.divider()
+        st.markdown(
+            f"📄 الصفحة: {best_page['page']}"
+        )
 
     else:
 
         st.warning(
-            "لم يتم العثور على هذه الكلمة أو العبارة داخل الكتاب."
+            "لم أتمكن من العثور على إجابة مناسبة داخل الكتاب."
         )
 
 else:
 
     st.info(
-        "✏️ اكتبي كلمة أو عبارة للبحث داخل الكتاب."
+        "💬 اكتبي سؤالاً من المنهج ليتم البحث عن الإجابة."
     )
