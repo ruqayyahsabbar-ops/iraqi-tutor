@@ -193,15 +193,15 @@ if st.button("🚀 الحصول على الإجابة"):
 
             answer = response.choices[0].message.content
 
-        st.session_state["last_answer"] = answer
+st.session_state["last_answer"] = answer
 st.session_state.questions_count += 1
 st.session_state.history.append(question)
 
-        st.success("✅ تم إنشاء الإجابة")
+st.success("✅ تم إنشاء الإجابة")
 
-        st.markdown("## 📖 الإجابة")
+st.markdown("## 📖 الإجابة")
 
-        st.write(answer)
+st.write(answer)
 
 st.markdown("### 📋 نسخة قابلة للنسخ")
 
