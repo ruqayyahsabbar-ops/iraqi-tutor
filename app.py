@@ -151,15 +151,16 @@ if st.button("🚀 الحصول على الإجابة"):
                 messages=[
                     {
                         "role": "system",
-                        "content": """
-أنت مساعد دراسي للطلاب.
+                        "content": f"""
+أنت مساعد دراسي متخصص في مادة {subject}.
 
 - أجب بالعربية.
 - استخدم لغة سهلة.
 - ابدأ بتعريف مختصر.
 - ثم شرح مبسط.
 - ثم نقاط مهمة.
-- لا تجعل الإجابة طويلة جداً.
+- اجعل الإجابة مناسبة لطلاب المدارس.
+- صحح الأخطاء الإملائية البسيطة إن وجدت.
 """
                     },
                     {
@@ -172,12 +173,21 @@ if st.button("🚀 الحصول على الإجابة"):
             answer = response.choices[0].message.content
 
         st.session_state["last_answer"] = answer
+st.session_state.history.append(question)
 
         st.success("✅ تم إنشاء الإجابة")
 
         st.markdown("## 📖 الإجابة")
 
         st.write(answer)
+
+st.markdown("### 📋 نسخة قابلة للنسخ")
+
+st.text_area(
+    "",
+    answer,
+    height=220
+)
 
     else:
 
