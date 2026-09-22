@@ -98,15 +98,15 @@ with st.sidebar:
     )
 
     st.divider()
-remaining = 15 - st.session_state.questions_count
 
-st.markdown("### 📊 الاستخدام اليومي")
-st.write(f"المتبقي اليوم: {remaining}")
+    remaining = 15 - st.session_state.questions_count
+
+    st.markdown("### 📊 الاستخدام اليومي")
+    st.write(f"المتبقي اليوم: {remaining}")
 
     st.markdown("### 🕒 آخر الأسئلة")
 
     if st.session_state.history:
-
         for q in st.session_state.history[-5:][::-1]:
             st.write("•", q)
 
