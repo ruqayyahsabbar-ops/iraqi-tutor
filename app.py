@@ -163,10 +163,7 @@ with st.sidebar:
 # تحديد ملف الكتاب
 # =========================
 
-folder = GRADES[grade]["folder"]
-filename = subjects[subject]
-
-book_path = Path("books") / folder / filename
+book_path = Path("ocr-result.pdf")
 
 # =========================
 # التحقق من وجود الكتاب
