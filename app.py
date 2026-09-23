@@ -356,3 +356,10 @@ D)
             st.write(
                 practice.choices[0].message.content
             )
+
+st.divider()
+
+st.link_button(
+    "💡 إرسال ملاحظة أو اقتراح",
+    "هنا_حطي_رابط_Google_Form"
+)
