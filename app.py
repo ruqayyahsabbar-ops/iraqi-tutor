@@ -361,5 +361,5 @@ st.divider()
 
 st.link_button(
     "💡 إرسال ملاحظة أو اقتراح",
-    "هنا_حطي_رابط_Google_Form"
+    "https://docs.google.com/forms/d/e/1FAIpQLSfAqyQPLVLQHM6nxyjR6M5k0VWttnohPVSH5ktaojDK7vhMIQ/viewform?usp=publish-editor"
 )
