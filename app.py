@@ -360,6 +360,6 @@ D)
 st.divider()
 
 st.link_button(
-    "💡 إرسال ملاحظة أو اقتراح",
+    "💡 إرسال ملاحظة أو  اقتراح",
     "https://docs.google.com/forms/d/e/1FAIpQLSfAqyQPLVLQHM6nxyjR6M5k0VWttnohPVSH5ktaojDK7vhMIQ/viewform?usp=publish-editor"
 )
