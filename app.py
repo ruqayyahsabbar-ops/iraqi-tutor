@@ -171,8 +171,7 @@ if st.button("🚀 الحصول على الإجابة"):
     model="llama-3.3-70b-versatile"
 ,
 
-  messages=[
-                messages=[
+      messages=[
                     {
                         "role": "system",
                         "content": f"""
