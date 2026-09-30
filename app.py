@@ -167,7 +167,7 @@ if st.button("🚀 الحصول على الإجابة"):
         with st.spinner("⏳ جاري إعداد الإجابة..."):
 
             response = client.chat.completions.create(
-                model="openai/gpt-oss-20b",
+                model="llama-3.3-70b-versatile"
                 messages=[
                     {
                         "role": "system",
@@ -264,7 +264,7 @@ D)
             with st.spinner("جاري التلخيص..."):
 
                 summary = client.chat.completions.create(
-                    model="openai/gpt-oss-20b",
+                    model="llama-3.3-70b-versatile"
                     messages=[
                         {
                             "role": "system",
