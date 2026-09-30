@@ -267,8 +267,9 @@ D)
             with st.spinner("جاري التلخيص..."):
 
                 summary = client.chat.completions.create(
-                    model="llama-3.3-70b-versatile"
-                    messages=[
+    model="llama-3.3-70b-versatile",
+
+    messages=[
                         {
                             "role": "system",
                             "content": """
