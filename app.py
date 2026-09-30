@@ -167,7 +167,11 @@ if st.button("🚀 الحصول على الإجابة"):
         with st.spinner("⏳ جاري إعداد الإجابة..."):
 
             response = client.chat.completions.create(
-                model="llama-3.3-70b-versatile"
+
+    model="llama-3.3-70b-versatile"
+,
+
+  messages=[
                 messages=[
                     {
                         "role": "system",
