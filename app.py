@@ -168,10 +168,8 @@ if st.button("🚀 الحصول على الإجابة"):
 
             response = client.chat.completions.create(
 
-    model="llama-3.3-70b-versatile"
-,
-
-      messages=[
+    model="llama-3.1-8b-instant",
+    messages=[
                     {
                         "role": "system",
                         "content": f"""
@@ -231,8 +229,10 @@ if "last_answer" in st.session_state:
             with st.spinner("جاري إنشاء الاختبار..."):
 
                 quiz = client.chat.completions.create(
-                    model="openai/gpt-oss-20b",
-                    messages=[
+
+    model="llama-3.1-8b-instant",
+    messages=[
+                    
                         {
                             "role": "system",
                             "content": """
@@ -267,8 +267,8 @@ D)
             with st.spinner("جاري التلخيص..."):
 
                 summary = client.chat.completions.create(
-    model="llama-3.3-70b-versatile",
 
+    model="llama-3.1-8b-instant",
     messages=[
                         {
                             "role": "system",
@@ -308,8 +308,9 @@ D)
             with st.spinner("جاري تبسيط الشرح..."):
 
                 easy = client.chat.completions.create(
-                    model="openai/gpt-oss-20b",
-                    messages=[
+
+    model="llama-3.1-8b-instant",
+    messages=[
                         {
                             "role": "system",
                             "content": """
@@ -338,8 +339,9 @@ D)
             with st.spinner("جاري إنشاء الأسئلة..."):
 
                 practice = client.chat.completions.create(
-                    model="openai/gpt-oss-20b",
-                    messages=[
+
+    model="llama-3.1-8b-instant",
+    messages=[
                         {
                             "role": "system",
                             "content": """
