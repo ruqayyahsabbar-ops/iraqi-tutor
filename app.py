@@ -171,7 +171,7 @@ if st.button("🚀 الحصول على الإجابة"):
     model="openai/gpt-oss-120b",
     messages=[
                     {
-    {
+    
     "role": "system",
     "content": f"""
 أنت مساعد المنهج العراقي.
