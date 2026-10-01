@@ -270,7 +270,7 @@ if "last_answer" in st.session_state:
     model="openai/gpt-oss-120b",
     messages=[
                     
-                        {
+                        
                           {
     "role": "system",
     "content": """
