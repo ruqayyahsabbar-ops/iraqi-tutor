@@ -230,7 +230,7 @@ if "last_answer" in st.session_state:
 
                 quiz = client.chat.completions.create(
 
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-120b",
     messages=[
                     
                         {
@@ -268,7 +268,7 @@ D)
 
                 summary = client.chat.completions.create(
 
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-120b",
     messages=[
                         {
                             "role": "system",
@@ -309,7 +309,7 @@ D)
 
                 easy = client.chat.completions.create(
 
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-120b",
     messages=[
                         {
                             "role": "system",
@@ -340,7 +340,7 @@ D)
 
                 practice = client.chat.completions.create(
 
-    model="llama-3.1-8b-instant",
+    model="openai/gpt-oss-120b",
     messages=[
                         {
                             "role": "system",
