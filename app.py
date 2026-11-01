@@ -361,6 +361,8 @@ if question:
             "content": question
         })
 
+        
+        
         try:
 
             with st.spinner("⏳ جاري إعداد الإجابة..."):
@@ -383,11 +385,11 @@ if question:
             })
 
             st.session_state.last_answer = answer
-st.session_state.questions_count += 1
-st.session_state.feature_results = {}
+            st.session_state.questions_count += 1
+            st.session_state.feature_results = {}
 
-st.session_state.understanding_feedback = ""
-st.session_state.understanding_answer = ""
+            st.session_state.understanding_feedback = ""
+            st.session_state.understanding_answer = ""
 
             with st.chat_message("user"):
                 st.markdown(question)
@@ -396,6 +398,7 @@ st.session_state.understanding_answer = ""
                 st.markdown(answer)
 
         except Exception as e:
+
             st.error(
                 "حدث خطأ أثناء إعداد الإجابة. "
                 "تحققي من الاتصال وحاولي مرة أخرى."
