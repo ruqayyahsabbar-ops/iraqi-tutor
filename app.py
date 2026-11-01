@@ -1,3 +1,4 @@
+
 import streamlit as st
 from groq import Groq
 from datetime import date
@@ -12,15 +13,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# =========================
-# Groq
-# =========================
-
-client = Groq(
-    api_key=st.secrets["GROQ_API_KEY"]
-)
-
+client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+MODEL = "openai/gpt-oss-120b"
 TODAY = str(date.today())
+
+# =========================
+# الذاكرة داخل الجلسة
+# =========================
 
 if "day" not in st.session_state:
     st.session_state.day = TODAY
@@ -32,39 +31,83 @@ if st.session_state.day != TODAY:
     st.session_state.day = TODAY
     st.session_state.questions_count = 0
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "last_answer" not in st.session_state:
+    st.session_state.last_answer = ""
+
+if "quick_question" not in st.session_state:
+    st.session_state.quick_question = ""
+
+if "feature_results" not in st.session_state:
+    st.session_state.feature_results = {}
+
 # =========================
-# الذاكرة
+# تعليمات المساعد
 # =========================
 
-if "history" not in st.session_state:
-    st.session_state.history = []
+SYSTEM_PROMPT = """
+أنت مساعد المنهج العراقي.
+
+القواعد:
+
+- أجب عن أسئلة المنهج العراقي والمواد الدراسية فقط.
+- يمكنك الإجابة عن أسئلة تساعد الطالب على الدراسة مثل:
+  • طرق المذاكرة
+  • طرق الحفظ
+  • تنظيم الوقت
+  • الاستعداد للامتحانات
+  • تحسين اللغة الإنجليزية
+  • مهارات التعلم
+
+- إذا كان السؤال خارج الدراسة والتعليم فاعتذر بلطف وقل:
+"عذراً، أنا مخصص للمساعدة في الدراسة والمنهج العراقي فقط."
+
+- استخدم لغة عربية سهلة وواضحة.
+- اشرح المفاهيم بطريقة مبسطة تناسب الطلاب.
+- لا تنسخ الكتاب حرفياً.
+- حافظ على المعنى العلمي الصحيح.
+- لا تضف تفاصيل جامعية أو معلومات متقدمة غير ضرورية.
+
+إذا كان السؤال علمياً أو من المنهج:
+رتب الإجابة بالشكل التالي:
+
+📌 التعريف
+
+📖 الشرح المبسط
+
+📝 أهم النقاط
+
+أما إذا كان السؤال عن الدراسة أو الحفظ أو تنظيم الوقت
+أو الامتحانات أو التركيز أو تطوير اللغة الإنجليزية:
+
+- لا تستخدم التعريف.
+- تحدث بلطف وبأسلوب مشجع.
+- قدم نصائح عملية ومباشرة.
+- اجعل الإجابة سهلة الفهم.
+"""
 
 # =========================
-# تنسيق
+# تنسيق الواجهة
 # =========================
 
 st.markdown("""
 <style>
-
-.main-title{
-    text-align:center;
-    font-size:42px;
-    font-weight:bold;
-    margin-bottom:5px;
+.main-title {
+    text-align: center;
+    font-size: 38px;
+    font-weight: bold;
+    margin-bottom: 5px;
 }
 
-.subtitle{
-    text-align:center;
-    color:gray;
-    margin-bottom:25px;
+.subtitle {
+    text-align: center;
+    color: gray;
+    margin-bottom: 25px;
 }
-
 </style>
 """, unsafe_allow_html=True)
-
-# =========================
-# العنوان
-# =========================
 
 st.markdown(
     '<div class="main-title">📚 مساعد المنهج العراقي</div>',
@@ -72,7 +115,7 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="subtitle">اسألي أي سؤال دراسي واحصلي على شرح مبسط واختبارات ومراجعة</div>',
+    '<div class="subtitle">مساعدك الدراسي من الأول المتوسط إلى السادس الإعدادي</div>',
     unsafe_allow_html=True
 )
 
@@ -106,181 +149,163 @@ with st.sidebar:
 
     st.markdown("### 🕒 آخر الأسئلة")
 
-    if st.session_state.history:
-        for q in st.session_state.history[-5:][::-1]:
-            st.write("•", q)
+    user_questions = [
+        msg["content"]
+        for msg in st.session_state.messages
+        if msg["role"] == "user"
+    ]
 
+    if user_questions:
+        for q in user_questions[-5:][::-1]:
+            st.write("•", q)
     else:
         st.write("لا توجد أسئلة بعد")
 
     st.divider()
 
-    if st.button("🗑️ مسح السجل"):
-
-        st.session_state.history = []
-
-        if "last_answer" in st.session_state:
-            del st.session_state["last_answer"]
-
+    if st.button("🗑️ مسح المحادثة", use_container_width=True):
+        st.session_state.messages = []
+        st.session_state.last_answer = ""
+        st.session_state.feature_results = {}
         st.rerun()
 
+# =========================
+# الأسئلة السريعة
+# =========================
 
 st.markdown("### ⚡ أسئلة سريعة")
 
 c1, c2 = st.columns(2)
 
 with c1:
-
     if st.button("🌍 ما هو النظام البيئي؟"):
-        st.session_state["quick_question"] = "ما هو النظام البيئي؟"
+        st.session_state.quick_question = "ما هو النظام البيئي؟"
 
 with c2:
-
     if st.button("🌱 اشرح التمثيل الضوئي"):
-        st.session_state["quick_question"] = "اشرح عملية التمثيل الضوئي"
-
-default_question = st.session_state.get("quick_question", "")
+        st.session_state.quick_question = "اشرح عملية التمثيل الضوئي"
 
 # =========================
-# السؤال
+# عرض المحادثة السابقة
 # =========================
 
-question = st.text_area(
-    "💬 اكتبي سؤالك:",
-    value=default_question,
-    placeholder="مثال: ما هو النظام البيئي؟",
-    height=150
-)
+for message in st.session_state.messages:
+
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
 # =========================
-# الحصول على الإجابة
+# استقبال السؤال
 # =========================
 
-if st.button("🚀 الحصول على الإجابة"):
+quick_question = st.session_state.quick_question
+st.session_state.quick_question = ""
 
-    if question.strip():
+question = st.chat_input("اكتبي سؤالك الدراسي هنا...")
 
-        if st.session_state.questions_count >= 15:
-            st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً)")
-            st.stop()
+if quick_question:
+    question = quick_question
 
-        with st.spinner("⏳ جاري إعداد الإجابة..."):
+# =========================
+# معالجة السؤال
+# =========================
 
-            response = client.chat.completions.create(
+if question:
 
-    model="openai/gpt-oss-120b",
-    messages=[
-                    {
-    
-    "role": "system",
-    "content": f"""
-أنت مساعد المنهج العراقي.
+    if not question.strip():
+        st.warning("اكتبي سؤالاً أولاً.")
 
-القواعد:
-
-- أجب عن أسئلة المنهج العراقي والمواد الدراسية فقط.
-- يمكنك الإجابة عن أسئلة تساعد الطالب على الدراسة مثل:
-  • طرق المذاكرة
-  • طرق الحفظ
-  • تنظيم الوقت
-  • الاستعداد للامتحانات
-  • تحسين اللغة الإنجليزية
-  • مهارات التعلم
-
-- إذا كان السؤال خارج الدراسة والتعليم فاعتذر بلطف وقل:
-  "عذراً، أنا مخصص للمساعدة في الدراسة والمنهج العراقي فقط."
-
-- استخدم لغة عربية سهلة وواضحة.
-- اشرح المفاهيم بطريقة مبسطة تناسب الطلاب.
-- لا تنسخ الكتاب حرفياً.
-- حافظ على المعنى العلمي الصحيح.
-- إذا طلب الطالب شرحاً فاشرح بأسلوب أسهل من الكتاب.
-- إذا طلب تعداد نقاط أو خصائص فاذكر النقاط الأساسية الموجودة في المنهج.
-- لا تضف تفاصيل جامعية أو معلومات متقدمة غير ضرورية.
-
-- رتب الإجابة بالشكل التالي:
-
-- إذا كان السؤال علمياً أو من المنهج:
-رتب الإجابة بالشكل التالي:
-
-📌 التعريف
-
-📖 الشرح المبسط
-
-📝 أهم النقاط
-
-- إذا كان السؤال عن:
-• الدراسة
-• الحفظ
-• تنظيم الوقت
-• الامتحانات
-• التركيز
-• مهارات التعلم
-• تطوير اللغة الإنجليزية
-
-فلا تستخدم التعريف.
-
-- تحدث بلطف وكأنك معلم أو صديق يساعد الطالب.
-- قدم نصائح عملية ومباشرة.
-- اجعل الإجابة مريحة وسهلة الفهم.
-"""
-},
-                    {
-                        "role": "user",
-                        "content": question
-                    }
-                ]
-            )
-
-            answer = response.choices[0].message.content
-
-            st.session_state["last_answer"] = answer
-            st.session_state.questions_count += 1
-            st.session_state.history.append(question)
-
-            st.success("✅ تم إنشاء الإجابة")
-
-            st.markdown("## 📖 الإجابة")
-            st.write(answer)
-
-            
-            
+    elif st.session_state.questions_count >= 15:
+        st.error("🚫 وصلتِ إلى الحد اليومي (15 سؤالاً).")
 
     else:
 
-        st.warning("✏️ اكتبي سؤالاً أولاً.")
+        conversation = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+                + f"\nالمادة التي اختارها الطالب: {subject}"
+            }
+        ]
+
+        conversation.extend(st.session_state.messages)
+
+        conversation.append({
+            "role": "user",
+            "content": question
+        })
+
+        try:
+
+            with st.spinner("⏳ جاري إعداد الإجابة..."):
+
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=conversation
+                )
+
+                answer = response.choices[0].message.content
+
+            st.session_state.messages.append({
+                "role": "user",
+                "content": question
+            })
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": answer
+            })
+
+            st.session_state.last_answer = answer
+            st.session_state.questions_count += 1
+            st.session_state.feature_results = {}
+
+            with st.chat_message("user"):
+                st.markdown(question)
+
+            with st.chat_message("assistant"):
+                st.markdown(answer)
+
+        except Exception:
+            st.error(
+                "حدث خطأ أثناء إعداد الإجابة. "
+                "تحققي من الاتصال وحاولي مرة أخرى."
+            )
 
 # =========================
 # الميزات الإضافية
 # =========================
-if "last_answer" in st.session_state:
+
+if st.session_state.last_answer:
 
     st.divider()
+    st.markdown("### ✨ أدوات المراجعة")
 
     col1, col2 = st.columns(2)
 
     with col1:
 
-        if st.button("📝 إنشاء اختبار"):
+        if st.button("📝 إنشاء اختبار", use_container_width=True):
 
             with st.spinner("جاري إنشاء الاختبار..."):
 
-                quiz = client.chat.completions.create(
+                try:
 
-    model="openai/gpt-oss-120b",
-    messages=[
-                    
-                        
-                          {
-    "role": "system",
-    "content": """
-إذا كان النص التالي موضوعاً علمياً أو دراسياً من المنهج العراقي فأنشئ 5 أسئلة اختيار من متعدد.
+                    result = client.chat.completions.create(
+                        model=MODEL,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": """
+إذا كان النص موضوعاً علمياً أو دراسياً
+من المنهج العراقي، أنشئ 5 أسئلة اختيار من متعدد.
 
-أما إذا كان النص عبارة عن نصائح للدراسة أو الحفظ أو تنظيم الوقت أو التوجيه التعليمي فاكتب فقط:
+أما إذا كان نصيحة دراسية فاكتب فقط:
 
-هذه الإجابة عبارة عن نصيحة دراسية، لذلك لا يمكن إنشاء اختبار لها.
+هذه الإجابة عبارة عن نصيحة دراسية،
+لذلك لا يمكن إنشاء اختبار لها.
 
-لكل سؤال:
+لكل سؤال اكتب:
 A)
 B)
 C)
@@ -288,125 +313,157 @@ D)
 
 ثم اكتب الإجابات الصحيحة في النهاية.
 """
-},                       {
-                            "role": "user",
-                            "content": st.session_state["last_answer"]
-                        }
-                    ]
-                )
+                            },
+                            {
+                                "role": "user",
+                                "content": st.session_state.last_answer
+                            }
+                        ]
+                    )
 
-            st.markdown("## 📝 الاختبار")
+                    st.session_state.feature_results["quiz"] = (
+                        result.choices[0].message.content
+                    )
 
-            st.write(
-                quiz.choices[0].message.content
-            )
+                except Exception:
+                    st.error("حدث خطأ أثناء إنشاء الاختبار.")
 
     with col2:
 
-        if st.button("📚 تلخيص"):
+        if st.button("📚 تلخيص", use_container_width=True):
 
             with st.spinner("جاري التلخيص..."):
 
-                summary = client.chat.completions.create(
+                try:
 
-    model="openai/gpt-oss-120b",
-    messages=[
-                        {
-                            "role": "system",
-                       "content": """
-إذا كان النص التالي موضوعاً دراسياً أو علمياً فقم بتلخيصه.
+                    result = client.chat.completions.create(
+                        model=MODEL,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": """
+إذا كان النص موضوعاً دراسياً أو علمياً فقم بتلخيصه.
 
-أما إذا كان النص عبارة عن نصيحة دراسية أو توجيه تعليمي فاكتب فقط:
+أما إذا كان نصيحة دراسية فاكتب فقط:
 
-هذه الإجابة عبارة عن نصيحة دراسية، لذلك لا يمكن تلخيصها.
+هذه الإجابة عبارة عن نصيحة دراسية،
+لذلك لا يمكن تلخيصها.
 """
+                            },
+                            {
+                                "role": "user",
+                                "content": st.session_state.last_answer
+                            }
+                        ]
+                    )
 
+                    st.session_state.feature_results["summary"] = (
+                        result.choices[0].message.content
+                    )
 
-                        },
-                        {
-                            "role": "user",
-                            "content": st.session_state["last_answer"]
-                        }
-                    ]
-                )
-
-            st.markdown("## 📚 الملخص")
-
-            st.write(
-                summary.choices[0].message.content
-            )
-
-    st.divider()
+                except Exception:
+                    st.error("حدث خطأ أثناء التلخيص.")
 
     col3, col4 = st.columns(2)
 
     with col3:
 
-        if st.button("🧒 شرح أبسط"):
+        if st.button("🧒 شرح أبسط", use_container_width=True):
 
             with st.spinner("جاري تبسيط الشرح..."):
 
-                easy = client.chat.completions.create(
+                try:
 
-    model="openai/gpt-oss-120b",
-    messages=[
-                        {
-                            "role": "system",
-                            "content": """
+                    result = client.chat.completions.create(
+                        model=MODEL,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": """
 اشرح الموضوع لطفل بعمر 12 سنة.
-
 استخدم كلمات سهلة جداً.
+حافظ على المعنى العلمي الصحيح.
 """
-                        },
-                        {
-                            "role": "user",
-                            "content": st.session_state["last_answer"]
-                        }
-                    ]
-                )
+                            },
+                            {
+                                "role": "user",
+                                "content": st.session_state.last_answer
+                            }
+                        ]
+                    )
 
-            st.markdown("## 🧒 الشرح المبسط")
+                    st.session_state.feature_results["easy"] = (
+                        result.choices[0].message.content
+                    )
 
-            st.write(
-                easy.choices[0].message.content
-            )
+                except Exception:
+                    st.error("حدث خطأ أثناء تبسيط الشرح.")
 
     with col4:
 
-        if st.button("🎯 أسئلة مشابهة"):
+        if st.button("🎯 أسئلة مشابهة", use_container_width=True):
 
             with st.spinner("جاري إنشاء الأسئلة..."):
 
-                practice = client.chat.completions.create(
+                try:
 
-    model="openai/gpt-oss-120b",
-    messages=[
-                        {
-                            "role": "system",
-                            "content": """
-إذا كان النص التالي موضوعاً علمياً أو دراسياً فأنشئ 10 أسئلة تدريبية مشابهة.
+                    result = client.chat.completions.create(
+                        model=MODEL,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": """
+إذا كان النص موضوعاً علمياً أو دراسياً
+فأنشئ 10 أسئلة تدريبية مشابهة.
 
-أما إذا كان النص عبارة عن نصيحة دراسية أو توجيه تعليمي فاكتب فقط:
+أما إذا كان نصيحة دراسية فاكتب فقط:
 
-هذه الإجابة عبارة عن نصيحة دراسية، لذلك لا يمكن إنشاء أسئلة مشابهة لها.
+هذه الإجابة عبارة عن نصيحة دراسية،
+لذلك لا يمكن إنشاء أسئلة مشابهة لها.
 """
-                        },
-                        {
-                            "role": "user",
-                            "content": st.session_state["last_answer"]
-                        }
-                    ]
-                )
+                            },
+                            {
+                                "role": "user",
+                                "content": st.session_state.last_answer
+                            }
+                        ]
+                    )
 
-            st.markdown("## 🎯 أسئلة تدريبية")
+                    st.session_state.feature_results["practice"] = (
+                        result.choices[0].message.content
+                    )
 
-            st.write(
-                practice.choices[0].message.content
-            )
+                except Exception:
+                    st.error("حدث خطأ أثناء إنشاء الأسئلة.")
+
+# =========================
+# عرض نتائج أدوات المراجعة
+# =========================
+
+feature_titles = {
+    "quiz": "📝 الاختبار",
+    "summary": "📚 الملخص",
+    "easy": "🧒 الشرح المبسط",
+    "practice": "🎯 الأسئلة التدريبية"
+}
+
+for key, title in feature_titles.items():
+
+    if key in st.session_state.feature_results:
+
+        st.markdown(f"## {title}")
+
+        st.markdown(
+            st.session_state.feature_results[key]
+        )
+
+# =========================
+# الملاحظات والاقتراحات
+# =========================
 
 st.divider()
 
 st.link_button(
-    "💡 إرسال ملاحظة أو  اقتراح",
+    "💡 إرسال ملاحظة أو اقتراح",
     "https://docs.google.com/forms/d/e/1FAIpQLSfAqyQPLVLQHM6nxyjR6M5k0VWttnohPVSH5ktaojDK7vhMIQ/viewform?usp=publish-editor"
 )
