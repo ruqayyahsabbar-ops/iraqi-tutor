@@ -88,24 +88,84 @@ SYSTEM_PROMPT = """
 - اجعل الإجابة سهلة الفهم.
 """
 
+
 # =========================
 # تنسيق الواجهة
 # =========================
 
 st.markdown("""
 <style>
+
+/* العنوان الرئيسي */
 .main-title {
     text-align: center;
-    font-size: 38px;
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-size: clamp(26px, 5vw, 38px);
+    font-weight: 800;
+    margin-top: 10px;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
 }
 
+/* الوصف */
 .subtitle {
     text-align: center;
-    color: gray;
-    margin-bottom: 25px;
+    opacity: 0.75;
+    font-size: 15px;
+    margin-bottom: 28px;
 }
+
+/* رسائل المحادثة */
+[data-testid="stChatMessage"] {
+    border: 1px solid var(--secondary-background-color);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 12px;
+}
+
+/* مربع كتابة السؤال */
+[data-testid="stChatInput"] {
+    border-radius: 22px;
+}
+
+/* حقل الكتابة */
+[data-testid="stChatInput"] textarea {
+    font-size: 16px;
+}
+
+/* الأزرار */
+.stButton > button {
+    border-radius: 12px;
+    min-height: 45px;
+    font-weight: 600;
+    transition: 0.2s ease;
+}
+
+/* القوائم المنسدلة */
+[data-testid="stSelectbox"] {
+    margin-bottom: 10px;
+}
+
+/* القائمة الجانبية */
+[data-testid="stSidebar"] {
+    border-right: 1px solid var(--secondary-background-color);
+}
+
+/* تحسين العرض على الهاتف */
+@media (max-width: 640px) {
+    .main-title {
+        font-size: 27px;
+    }
+
+    .subtitle {
+        font-size: 13px;
+    }
+
+    [data-testid="stChatMessage"] {
+        padding: 10px;
+        border-radius: 13px;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -115,7 +175,7 @@ st.markdown(
 )
 
 st.markdown(
-    '<div class="subtitle">مساعدك الدراسي من الأول المتوسط إلى السادس الإعدادي</div>',
+    '<div class="subtitle">مساعدك الدراسي من الأول الابتدائي إلى السادس الإعدادي</div>',
     unsafe_allow_html=True
 )
 
