@@ -261,19 +261,17 @@ if question:
 
     else:
 
-        
-conversation = [
-    {
-        "role": "system",
-        "content": SYSTEM_PROMPT
-        + f"\nالصف الدراسي: {grade}"
-        + f"\nالفرع الدراسي: {branch}"
-        + f"\nالمادة الدراسية: {subject}"
-        + "\nراعِ مستوى الصف والفرع عند الشرح."
-        + "\nلا تخلط بين مناهج الصفوف أو الفروع المختلفة."
-    }
-]
-
+        conversation = [
+            {
+                "role": "system",
+                "content": SYSTEM_PROMPT
+                + f"\nالصف الدراسي: {grade}"
+                + f"\nالفرع الدراسي: {branch}"
+                + f"\nالمادة الدراسية: {subject}"
+                + "\nراعِ مستوى الصف والفرع عند الشرح."
+                + "\nلا تخلط بين مناهج الصفوف أو الفروع المختلفة."
+            }
+        ]
 
         conversation.extend(st.session_state.messages)
 
@@ -313,13 +311,15 @@ conversation = [
             with st.chat_message("assistant"):
                 st.markdown(answer)
 
-        except Exception:
+        except Exception as e:
             st.error(
                 "حدث خطأ أثناء إعداد الإجابة. "
                 "تحققي من الاتصال وحاولي مرة أخرى."
             )
 
-# =========================
+ 
+
+=========================
 # الميزات الإضافية
 # =========================
 
