@@ -2,6 +2,7 @@
 import streamlit as st
 from groq import Groq
 from datetime import date
+import json
 
 # =========================
 # إعداد الصفحة
@@ -49,16 +50,24 @@ if "understanding_feedback" not in st.session_state:
 if "understanding_answer" not in st.session_state:
     st.session_state.understanding_answer = ""
 
+if "quiz_data" not in st.session_state:
+    st.session_state.quiz_data = None
+
+if "quiz_result" not in st.session_state:
+    st.session_state.quiz_result = None
+
+if "quiz_version" not in st.session_state:
+    st.session_state.quiz_version = 0
+
 # =========================
 # تعليمات المساعد
 # =========================
-
 
 SYSTEM_PROMPT = """
 أنت مساعد تعليمي متخصص في مساعدة الطلاب في المناهج العراقية
 من الصف الأول الابتدائي إلى السادس الإعدادي.
 
-مهمتك الأساسية هي مساعدة الطالب على فهم الدروس والأفكار،
+مهمتك الأساسية مساعدة الطالب على فهم الدروس والأفكار،
 وليس حفظ النصوص أو نقلها حرفياً.
 
 قواعد الشرح:
@@ -66,30 +75,28 @@ SYSTEM_PROMPT = """
 - اشرح الفكرة بأسلوبك الخاص وبكلمات سهلة وواضحة.
 - لا تنقل نص الكتاب حرفياً.
 - اجعل الشرح مناسباً للصف الدراسي الذي اختاره الطالب.
-- حافظ على الدقة العلمية والمصطلحات الأساسية للمنهج.
+- حافظ على الدقة العلمية والمصطلحات الأساسية.
 - لا تخلط بين معلومات الصفوف أو الفروع المختلفة.
-- لا تضف معلومات متقدمة لا يحتاجها الطالب.
+- لا تضف معلومات متقدمة غير ضرورية.
 - إذا كان السؤال غير واضح، اطلب توضيحه.
 - لا تخترع معلومات أو قوانين أو أمثلة غير صحيحة.
 
 عند شرح موضوع علمي أو دراسي، استخدم الترتيب التالي:
 
 📌 الفكرة الأساسية:
-اشرح الموضوع بجملة أو جملتين توضحان معناه.
+اشرح الموضوع بجملة أو جملتين.
 
 📖 الشرح المبسط:
-اشرح الفكرة خطوة بخطوة، مع توضيح أسباب الظواهر
-والعلاقات بين المفاهيم.
+اشرح الفكرة خطوة بخطوة.
 
 🌱 مثال توضيحي:
-قدم مثالاً صحيحاً من الحياة اليومية إذا كان ذلك مناسباً.
+قدم مثالاً صحيحاً من الحياة اليومية إذا كان مناسباً.
 
 ⭐ أهم النقاط:
-اذكر أهم المعلومات والمصطلحات التي ينبغي للطالب فهمها.
+اذكر أهم المعلومات والمصطلحات.
 
 🧠 اختبر فهمك:
-اختم بسؤال قصير واحد يساعد الطالب على التفكير
-والتأكد من فهم الموضوع، ولا تكتب الإجابة مباشرة.
+اختم بسؤال قصير واحد ولا تكتب إجابته مباشرة.
 
 إذا كان السؤال عن نصيحة دراسية أو تنظيم الوقت أو الحفظ
 أو تحسين اللغة الإنجليزية:
@@ -100,15 +107,10 @@ SYSTEM_PROMPT = """
 "عذراً، أنا مخصص للمساعدة في الدراسة والتعليم فقط."
 
 إذا طلب الطالب تبسيط الإجابة السابقة:
-أعد شرحها بطريقة أسهل، واستخدم مثالاً مختلفاً،
-ولا تكرر الشرح السابق كما هو.
+أعد شرحها بطريقة أسهل واستخدم مثالاً مختلفاً.
 
-إذا طلب الطالب اختباراً أو أسئلة تدريبية:
-أنشئ أسئلة مناسبة لمستواه وصفه الدراسي.
-
-استخدم العربية الواضحة، وابتعد عن التعقيد والإطالة غير الضرورية.
+استخدم العربية الواضحة وابتعد عن التعقيد والإطالة.
 """
-
 
 # =========================
 # تنسيق الواجهة
@@ -117,7 +119,6 @@ SYSTEM_PROMPT = """
 st.markdown("""
 <style>
 
-/* العنوان الرئيسي */
 .main-title {
     text-align: center;
     font-size: clamp(26px, 5vw, 38px);
@@ -127,7 +128,6 @@ st.markdown("""
     letter-spacing: -0.5px;
 }
 
-/* الوصف */
 .subtitle {
     text-align: center;
     opacity: 0.75;
@@ -135,7 +135,6 @@ st.markdown("""
     margin-bottom: 28px;
 }
 
-/* رسائل المحادثة */
 [data-testid="stChatMessage"] {
     border: 1px solid var(--secondary-background-color);
     border-radius: 16px;
@@ -143,17 +142,14 @@ st.markdown("""
     margin-bottom: 12px;
 }
 
-/* مربع كتابة السؤال */
 [data-testid="stChatInput"] {
     border-radius: 22px;
 }
 
-/* حقل الكتابة */
 [data-testid="stChatInput"] textarea {
     font-size: 16px;
 }
 
-/* الأزرار */
 .stButton > button {
     border-radius: 12px;
     min-height: 45px;
@@ -161,17 +157,14 @@ st.markdown("""
     transition: 0.2s ease;
 }
 
-/* القوائم المنسدلة */
 [data-testid="stSelectbox"] {
     margin-bottom: 10px;
 }
 
-/* القائمة الجانبية */
 [data-testid="stSidebar"] {
     border-right: 1px solid var(--secondary-background-color);
 }
 
-/* تحسين العرض على الهاتف */
 @media (max-width: 640px) {
     .main-title {
         font-size: 27px;
@@ -204,12 +197,10 @@ st.markdown(
 # القائمة الجانبية
 # =========================
 
-
 with st.sidebar:
 
     st.header("🎓 المساعد الدراسي")
 
-    # اختيار الصف
     grade = st.selectbox(
         "🎓 اختاري الصف الدراسي",
         [
@@ -228,7 +219,6 @@ with st.sidebar:
         ]
     )
 
-    # اختيار الفرع
     branch = "غير محدد"
 
     if grade in [
@@ -241,7 +231,6 @@ with st.sidebar:
             ["العلمي", "الأدبي"]
         )
 
-    # اختيار المادة
     subject = st.selectbox(
         "📚 اختاري المادة",
         [
@@ -264,7 +253,10 @@ with st.sidebar:
 
     st.divider()
 
-    remaining = 15 - st.session_state.questions_count
+    remaining = max(
+        0,
+        15 - st.session_state.questions_count
+    )
 
     st.markdown("### 📊 الاستخدام اليومي")
     st.write(f"المتبقي اليوم: {remaining}")
@@ -285,10 +277,17 @@ with st.sidebar:
 
     st.divider()
 
-    if st.button("🗑️ مسح المحادثة", use_container_width=True):
+    if st.button(
+        "🗑️ مسح المحادثة",
+        use_container_width=True
+    ):
         st.session_state.messages = []
         st.session_state.last_answer = ""
         st.session_state.feature_results = {}
+        st.session_state.understanding_feedback = ""
+        st.session_state.understanding_answer = ""
+        st.session_state.quiz_data = None
+        st.session_state.quiz_result = None
         st.rerun()
 
 # =========================
@@ -361,8 +360,6 @@ if question:
             "content": question
         })
 
-        
-        
         try:
 
             with st.spinner("⏳ جاري إعداد الإجابة..."):
@@ -391,20 +388,21 @@ if question:
             st.session_state.understanding_feedback = ""
             st.session_state.understanding_answer = ""
 
+            st.session_state.quiz_data = None
+            st.session_state.quiz_result = None
+
             with st.chat_message("user"):
                 st.markdown(question)
 
             with st.chat_message("assistant"):
                 st.markdown(answer)
 
-        except Exception as e:
-
+        except Exception:
             st.error(
                 "حدث خطأ أثناء إعداد الإجابة. "
                 "تحققي من الاتصال وحاولي مرة أخرى."
             )
 
- 
 # =========================
 # اختبار فهم الطالب
 # =========================
@@ -413,13 +411,16 @@ if st.session_state.last_answer:
 
     st.divider()
     st.markdown("### 🧠 اختبر فهمك")
-    st.caption("اكتب إجابتك عن السؤال الموجود في نهاية الشرح.")
+
+    st.caption(
+        "اكتبي إجابتك عن السؤال الموجود في نهاية الشرح."
+    )
 
     with st.form("understanding_form"):
 
         student_answer = st.text_area(
             "✍️ إجابتك:",
-            placeholder="اكتب إجابتك هنا...",
+            placeholder="اكتبي إجابتك هنا...",
             key="understanding_answer",
             height=100
         )
@@ -432,7 +433,7 @@ if st.session_state.last_answer:
     if check_answer:
 
         if not student_answer.strip():
-            st.warning("اكتب إجابتك أولاً.")
+            st.warning("اكتبي إجابتك أولاً.")
 
         else:
 
@@ -457,7 +458,6 @@ if st.session_state.last_answer:
   وما الذي يحتاج إلى تكملة.
 - إذا كانت خاطئة، وضّح الخطأ بلطف
   واشرح الإجابة الصحيحة بطريقة مبسطة.
-- لا تكن قاسياً أو محبطاً.
 - لا تعتبر اختلاف صياغة الإجابة خطأ
   إذا كان معناها صحيحاً.
 - لا تخترع معلومات غير موجودة في الموضوع.
@@ -492,9 +492,8 @@ if st.session_state.last_answer:
             st.session_state.understanding_feedback
         )
 
-
 # =========================
-# الميزات الإضافية
+# أدوات المراجعة
 # =========================
 
 if st.session_state.last_answer:
@@ -506,9 +505,12 @@ if st.session_state.last_answer:
 
     with col1:
 
-        if st.button("📝 إنشاء اختبار", use_container_width=True):
+        if st.button(
+            "📝 إنشاء اختبار تفاعلي",
+            use_container_width=True
+        ):
 
-            with st.spinner("جاري إنشاء الاختبار..."):
+            with st.spinner("🧠 جاري إعداد الاختبار..."):
 
                 try:
 
@@ -518,40 +520,117 @@ if st.session_state.last_answer:
                             {
                                 "role": "system",
                                 "content": """
-إذا كان النص موضوعاً علمياً أو دراسياً
-من المنهج العراقي، أنشئ 5 أسئلة اختيار من متعدد.
+أنت معلم متخصص في إعداد الاختبارات التعليمية.
 
-أما إذا كان نصيحة دراسية فاكتب فقط:
+أنشئ 5 أسئلة اختيار من متعدد اعتماداً على
+الموضوع الموجود في إجابة المساعد.
 
-هذه الإجابة عبارة عن نصيحة دراسية،
-لذلك لا يمكن إنشاء اختبار لها.
+راعِ الصف والمادة والفرع المحدد للطالب.
 
-لكل سؤال اكتب:
-A)
-B)
-C)
-D)
+أعد النتيجة بصيغة JSON فقط بهذا الشكل:
 
-ثم اكتب الإجابات الصحيحة في النهاية.
+{
+  "questions": [
+    {
+      "question": "نص السؤال",
+      "options": [
+        "الخيار الأول",
+        "الخيار الثاني",
+        "الخيار الثالث",
+        "الخيار الرابع"
+      ],
+      "correct_index": 0,
+      "explanation": "شرح سبب صحة الإجابة"
+    }
+  ]
+}
+
+الشروط:
+- أنشئ 5 أسئلة بالضبط.
+- لكل سؤال أربعة خيارات مختلفة.
+- correct_index رقم الإجابة الصحيحة ويبدأ من صفر.
+- اجعل الخيارات منطقية.
+- لا تجعل الإجابة الصحيحة دائماً الخيار الأول.
+- اكتب شرحاً مبسطاً لكل إجابة صحيحة.
+- لا تضع الإجابة الصحيحة ضمن نص السؤال.
+- لا تخرج عن الموضوع.
+- لا تخترع معلومات غير مؤكدة.
+- أعد JSON صالحاً فقط دون أي نص إضافي.
 """
                             },
                             {
                                 "role": "user",
-                                "content": st.session_state.last_answer
+                                "content": (
+                                    f"الصف: {grade}\n"
+                                    f"الفرع: {branch}\n"
+                                    f"المادة: {subject}\n\n"
+                                    f"الموضوع:\n"
+                                    + st.session_state.last_answer
+                                )
                             }
                         ]
                     )
 
-                    st.session_state.feature_results["quiz"] = (
-                        result.choices[0].message.content
-                    )
+                    raw = result.choices[0].message.content.strip()
+
+                    # إزالة علامات تنسيق JSON إن وجدت
+                    if raw.startswith("```"):
+                        raw = raw.split("\n", 1)[1]
+                        raw = raw.rsplit("```", 1)[0]
+
+                    # استخراج JSON
+                    start = raw.find("{")
+                    end = raw.rfind("}")
+
+                    if start == -1 or end == -1:
+                        raise ValueError("لم يتم العثور على JSON")
+
+                    data = json.loads(raw[start:end + 1])
+
+                    questions = data["questions"]
+
+                    if len(questions) != 5:
+                        raise ValueError("عدد الأسئلة غير صحيح")
+
+                    for q in questions:
+
+                        if not isinstance(q["question"], str):
+                            raise ValueError("السؤال غير صالح")
+
+                        if len(q["options"]) != 4:
+                            raise ValueError("عدد الخيارات غير صحيح")
+
+                        if not all(
+                            isinstance(option, str)
+                            for option in q["options"]
+                        ):
+                            raise ValueError("الخيارات غير صالحة")
+
+                        if (
+                            not isinstance(q["correct_index"], int)
+                            or q["correct_index"] not in range(4)
+                        ):
+                            raise ValueError("الإجابة الصحيحة غير صالحة")
+
+                        if not isinstance(q["explanation"], str):
+                            raise ValueError("شرح الإجابة غير صالح")
+
+                    st.session_state.quiz_data = questions
+                    st.session_state.quiz_result = None
+                    st.session_state.quiz_version += 1
 
                 except Exception:
-                    st.error("حدث خطأ أثناء إنشاء الاختبار.")
+                    st.error(
+                        "تعذر إنشاء الاختبار. "
+                        "حاولي مرة أخرى."
+                    )
 
     with col2:
 
-        if st.button("📚 تلخيص", use_container_width=True):
+        if st.button(
+            "📚 تلخيص",
+            use_container_width=True
+        ):
 
             with st.spinner("جاري التلخيص..."):
 
@@ -589,7 +668,10 @@ D)
 
     with col3:
 
-        if st.button("🧒 شرح أبسط", use_container_width=True):
+        if st.button(
+            "🧒 شرح أبسط",
+            use_container_width=True
+        ):
 
             with st.spinner("جاري تبسيط الشرح..."):
 
@@ -622,7 +704,10 @@ D)
 
     with col4:
 
-        if st.button("🎯 أسئلة مشابهة", use_container_width=True):
+        if st.button(
+            "🎯 أسئلة مشابهة",
+            use_container_width=True
+        ):
 
             with st.spinner("جاري إنشاء الأسئلة..."):
 
@@ -662,7 +747,6 @@ D)
 # =========================
 
 feature_titles = {
-    "quiz": "📝 الاختبار",
     "summary": "📚 الملخص",
     "easy": "🧒 الشرح المبسط",
     "practice": "🎯 الأسئلة التدريبية"
@@ -677,6 +761,96 @@ for key, title in feature_titles.items():
         st.markdown(
             st.session_state.feature_results[key]
         )
+
+# =========================
+# الاختبار التفاعلي
+# =========================
+
+if st.session_state.quiz_data:
+
+    st.divider()
+
+    st.markdown("## 📝 الاختبار التفاعلي")
+
+    st.caption(
+        "اختاري إجابة واحدة لكل سؤال، ثم اضغطي على تصحيح الاختبار."
+    )
+
+    with st.form(
+        f"interactive_quiz_{st.session_state.quiz_version}"
+    ):
+
+answers.append(selected)
+
+st.divider()
+
+submitted = st.form_submit_button(
+    "📩 تصحيح الاختبار",
+    use_container_width=True
+)
+
+if submitted:
+
+    if any(answer is None for answer in answers):
+        st.warning("أجيبي عن جميع الأسئلة أولاً.")
+
+    else:
+        details = []
+        score = 0
+
+        for i, q in enumerate(st.session_state.quiz_data):
+
+            correct_answer = q["options"][q["correct_index"]]
+
+            is_correct = answers[i] == correct_answer
+
+            if is_correct:
+                score += 1
+
+            details.append({
+                "question": q["question"],
+                "selected": answers[i],
+                "correct": correct_answer,
+                "is_correct": is_correct,
+                "explanation": q["explanation"]
+            })
+
+        st.session_state.quiz_result = {
+            "score": score,
+            "details": details
+        }
+
+    # عرض النتيجة
+    if st.session_state.quiz_result:
+
+        result = st.session_state.quiz_result
+
+        st.divider()
+        st.markdown("## 🏆 نتيجتك")
+        st.subheader(f"{result['score']} / 5")
+
+        st.progress(result["score"] / 5)
+
+        if result["score"] == 5:
+            st.success("ممتاز! جميع إجاباتك صحيحة.")
+        elif result["score"] >= 3:
+            st.success("أحسنت! لديك فهم جيد، واصل المراجعة.")
+        else:
+            st.info("لا بأس! راجعي الشرح وحاولي التعلم من الأخطاء.")
+
+        st.markdown("### 📋 تصحيح الإجابات")
+
+        for i, item in enumerate(result["details"]):
+
+            status = "✅ صحيح" if item["is_correct"] else "❌ خطأ"
+
+            with st.expander(f"السؤال {i + 1} - {status}"):
+
+                st.write(item["question"])
+                st.write(f"إجابتك: {item['selected']}")
+                st.write(f"الإجابة الصحيحة: {item['correct']}")
+
+                st.info("💡 التوضيح: " + item["explanation"])
 
 # =========================
 # الملاحظات والاقتراحات
