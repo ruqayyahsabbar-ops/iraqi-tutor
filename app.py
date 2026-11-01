@@ -761,7 +761,6 @@ for key, title in feature_titles.items():
         st.markdown(
             st.session_state.feature_results[key]
         )
-
 # =========================
 # الاختبار التفاعلي
 # =========================
@@ -769,7 +768,6 @@ for key, title in feature_titles.items():
 if st.session_state.quiz_data:
 
     st.divider()
-
     st.markdown("## 📝 الاختبار التفاعلي")
 
     st.caption(
@@ -780,45 +778,60 @@ if st.session_state.quiz_data:
         f"interactive_quiz_{st.session_state.quiz_version}"
     ):
 
-answers.append(selected)
-
-st.divider()
-
-submitted = st.form_submit_button(
-    "📩 تصحيح الاختبار",
-    use_container_width=True
-)
-
-if submitted:
-
-    if any(answer is None for answer in answers):
-        st.warning("أجيبي عن جميع الأسئلة أولاً.")
-
-    else:
-        details = []
-        score = 0
+        answers = []
 
         for i, q in enumerate(st.session_state.quiz_data):
 
-            correct_answer = q["options"][q["correct_index"]]
+            st.markdown(f"### السؤال {i + 1}")
+            st.write(q["question"])
 
-            is_correct = answers[i] == correct_answer
+            selected = st.radio(
+                "اختاري الإجابة:",
+                q["options"],
+                index=None,
+                key=f"quiz_choice_{st.session_state.quiz_version}_{i}"
+            )
 
-            if is_correct:
-                score += 1
+            answers.append(selected)
 
-            details.append({
-                "question": q["question"],
-                "selected": answers[i],
-                "correct": correct_answer,
-                "is_correct": is_correct,
-                "explanation": q["explanation"]
-            })
+            st.divider()
 
-        st.session_state.quiz_result = {
-            "score": score,
-            "details": details
-        }
+        submitted = st.form_submit_button(
+            "📩 تصحيح الاختبار",
+            use_container_width=True
+        )
+
+    if submitted:
+
+        if any(answer is None for answer in answers):
+
+            st.warning("أجيبي عن جميع الأسئلة أولاً.")
+
+        else:
+
+            details = []
+            score = 0
+
+            for i, q in enumerate(st.session_state.quiz_data):
+
+                correct_answer = q["options"][q["correct_index"]]
+                is_correct = answers[i] == correct_answer
+
+                if is_correct:
+                    score += 1
+
+                details.append({
+                    "question": q["question"],
+                    "selected": answers[i],
+                    "correct": correct_answer,
+                    "is_correct": is_correct,
+                    "explanation": q["explanation"]
+                })
+
+            st.session_state.quiz_result = {
+                "score": score,
+                "details": details
+            }
 
     # عرض النتيجة
     if st.session_state.quiz_result:
@@ -852,6 +865,16 @@ if submitted:
 
                 st.info("💡 التوضيح: " + item["explanation"])
 
+# =========================
+# الملاحظات والاقتراحات
+# =========================
+
+st.divider()
+
+st.link_button(
+    "💡 إرسال ملاحظة أو اقتراح",
+    "https://docs.google.com/forms/d/e/1FAIpQLSfAqyQPLVLQHM6nxyjR6M5k0VWttnohPVSH5ktaojDK7vhMIQ/viewform?usp=publish-editor"
+)
 # =========================
 # الملاحظات والاقتراحات
 # =========================
