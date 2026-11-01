@@ -43,6 +43,12 @@ if "quick_question" not in st.session_state:
 if "feature_results" not in st.session_state:
     st.session_state.feature_results = {}
 
+if "understanding_feedback" not in st.session_state:
+    st.session_state.understanding_feedback = ""
+
+if "understanding_answer" not in st.session_state:
+    st.session_state.understanding_answer = ""
+
 # =========================
 # تعليمات المساعد
 # =========================
@@ -377,8 +383,11 @@ if question:
             })
 
             st.session_state.last_answer = answer
-            st.session_state.questions_count += 1
-            st.session_state.feature_results = {}
+st.session_state.questions_count += 1
+st.session_state.feature_results = {}
+
+st.session_state.understanding_feedback = ""
+st.session_state.understanding_answer = ""
 
             with st.chat_message("user"):
                 st.markdown(question)
@@ -393,6 +402,93 @@ if question:
             )
 
  
+# =========================
+# اختبار فهم الطالب
+# =========================
+
+if st.session_state.last_answer:
+
+    st.divider()
+    st.markdown("### 🧠 اختبر فهمك")
+    st.caption("اكتب إجابتك عن السؤال الموجود في نهاية الشرح.")
+
+    with st.form("understanding_form"):
+
+        student_answer = st.text_area(
+            "✍️ إجابتك:",
+            placeholder="اكتب إجابتك هنا...",
+            key="understanding_answer",
+            height=100
+        )
+
+        check_answer = st.form_submit_button(
+            "📩 تحقق من إجابتي",
+            use_container_width=True
+        )
+
+    if check_answer:
+
+        if not student_answer.strip():
+            st.warning("اكتب إجابتك أولاً.")
+
+        else:
+
+            with st.spinner("🧠 جاري مراجعة إجابتك..."):
+
+                try:
+
+                    result = client.chat.completions.create(
+                        model=MODEL,
+                        messages=[
+                            {
+                                "role": "system",
+                                "content": """
+أنت معلم يساعد الطالب على فهم الدروس.
+
+اقرأ الشرح السابق وحدد سؤال اختبر فهمك
+الموجود في نهايته، ثم قيّم إجابة الطالب.
+
+قواعد التصحيح:
+- إذا كانت الإجابة صحيحة، قل: أحسنت! إجابتك صحيحة.
+- إذا كانت صحيحة جزئياً، وضّح الجزء الصحيح
+  وما الذي يحتاج إلى تكملة.
+- إذا كانت خاطئة، وضّح الخطأ بلطف
+  واشرح الإجابة الصحيحة بطريقة مبسطة.
+- لا تكن قاسياً أو محبطاً.
+- لا تعتبر اختلاف صياغة الإجابة خطأ
+  إذا كان معناها صحيحاً.
+- لا تخترع معلومات غير موجودة في الموضوع.
+
+اجعل التصحيح واضحاً ومختصراً.
+"""
+                            },
+                            {
+                                "role": "user",
+                                "content": (
+                                    "الشرح والسؤال:\n"
+                                    + st.session_state.last_answer
+                                    + "\n\nإجابة الطالب:\n"
+                                    + student_answer
+                                )
+                            }
+                        ]
+                    )
+
+                    st.session_state.understanding_feedback = (
+                        result.choices[0].message.content
+                    )
+
+                except Exception:
+                    st.error("حدث خطأ أثناء تصحيح الإجابة.")
+
+    if st.session_state.understanding_feedback:
+
+        st.markdown("### 📋 نتيجة إجابتك")
+
+        st.markdown(
+            st.session_state.understanding_feedback
+        )
+
 
 # =========================
 # الميزات الإضافية
